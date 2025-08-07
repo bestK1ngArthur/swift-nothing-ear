@@ -322,3 +322,5 @@ nothingEarDevice = NothingEar.Device(
 4. The developer shall not be liable for any direct or indirect damages arising from the use of the software, including data loss, hardware damage, or degraded audio quality. 
 
 5. By installing and using this software, you agree to the terms of this disclaimer.
+
+If you have questions, [contact me](mailto:bestk1ngarthur@aol.com).
