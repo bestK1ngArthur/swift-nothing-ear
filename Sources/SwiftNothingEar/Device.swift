@@ -15,12 +15,19 @@ extension NothingEar {
     }
 
     public enum ConnectionError: Error, LocalizedError, Sendable {
-        case bluetoothUnavailable
-        case deviceNotFound
+
+        public enum Bluetooth: Sendable {
+            case poweredOff
+            case unauthorized
+            case unavailable
+        }
+
+        case bluetooth(Bluetooth)
         case connectionFailed
+        case deviceNotFound
         case invalidResponse
-        case unsupportedOperation
         case timeout
+        case unsupportedOperation
     }
 
     public struct Callback {
@@ -104,8 +111,8 @@ extension NothingEar.Device {
     }
 
     public func startScanning() {
-        guard centralManager.state == .poweredOn else {
-            callback.onError(.bluetoothUnavailable)
+        if let error = error(from: centralManager.state) {
+            callback.onError(error)
             return
         }
 
@@ -586,6 +593,21 @@ extension NothingEar.Device {
             callback.onUpdateDeviceSettings(deviceSettings)
         }
     }
+
+    private func error(from state: CBManagerState) -> NothingEar.ConnectionError? {
+        switch state {
+            case .poweredOn:
+                nil
+            case .poweredOff:
+                .bluetooth(.poweredOff)
+            case .unauthorized:
+                .bluetooth(.unauthorized)
+            case .unsupported, .resetting, .unknown:
+                .bluetooth(.unavailable)
+            @unknown default:
+                nil
+        }
+    }
 }
 
 // MARK: CBCentralManagerDelegate
@@ -593,18 +615,13 @@ extension NothingEar.Device {
 extension NothingEar.Device: CBCentralManagerDelegate {
 
     nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        switch central.state {
-            case .poweredOn:
-                Task { @MainActor in
-                    checkAndConnectToExistingDevices()
-                }
-            case .poweredOff, .unsupported, .unauthorized, .resetting, .unknown:
-                Task { @MainActor in
-                    connectionStatus = .disconnected
-                    callback.onError(.bluetoothUnavailable)
-                }
-            @unknown default:
-                break
+        Task { @MainActor in
+            if central.state == .poweredOn {
+                checkAndConnectToExistingDevices()
+            } else if let error = error(from: central.state) {
+                connectionStatus = .disconnected
+                callback.onError(error)
+            }
         }
     }
 
@@ -773,18 +790,22 @@ extension NothingEar.ConnectionError {
 
     public var errorDescription: String? {
         switch self {
-        case .bluetoothUnavailable:
-            return "Bluetooth is not available on this device"
-        case .deviceNotFound:
-            return "Nothing Ear device not found"
-        case .connectionFailed:
-            return "Failed to connect to device"
-        case .invalidResponse:
-            return "Received invalid response from device"
-        case .unsupportedOperation:
-            return "Operation not supported by this device model"
-        case .timeout:
-            return "Operation timed out"
+            case .bluetooth(.poweredOff):
+                return "Bluetooth is powered off"
+            case .bluetooth(.unauthorized):
+                return "Bluetooth is not authorized"
+            case .bluetooth(.unavailable):
+                return "Bluetooth is not available on this device"
+            case .deviceNotFound:
+                return "Nothing device is not found"
+            case .connectionFailed:
+                return "Failed to connect to device"
+            case .invalidResponse:
+                return "Received invalid response from device"
+            case .unsupportedOperation:
+                return "Operation not supported by this device model"
+            case .timeout:
+                return "Operation timed out"
         }
     }
 }
