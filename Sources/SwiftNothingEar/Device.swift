@@ -358,7 +358,13 @@ extension NothingEar.Device {
     private func sendReadEQRequest() {
         NothingEar.Logger.bluetooth.debug("🎵 Sending read EQ request")
 
-        let isListeningModeSupported = deviceInfo?.model == .cmfBudsPro2 || deviceInfo?.model == .cmfBuds
+        let isListeningModeSupported = if case .cmfBudsPro2 = deviceInfo?.model {
+            true
+        } else if case .cmfBuds = deviceInfo?.model {
+            true
+        } else {
+            false
+        }
         let command = isListeningModeSupported
             ? NothingEar.BluetoothCommand.RequestRead.listeningMode
             : NothingEar.BluetoothCommand.RequestRead.eq
@@ -473,7 +479,7 @@ extension NothingEar.Device {
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber
                     }
-                    NothingEar.Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.rawValue, privacy: .public), serial=\(serialNumber, privacy: .public)")
+                    NothingEar.Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
                 } else {
                     NothingEar.Logger.parsing.warning("🏷️ Failed to parse serial number from response")
                 }

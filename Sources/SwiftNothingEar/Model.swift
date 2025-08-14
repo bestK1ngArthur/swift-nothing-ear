@@ -3,22 +3,73 @@ import Foundation
 extension NothingEar {
 
     /// Supported Nothing Ear device models
-    public enum Model: String, CaseIterable, Sendable {
-        case ear1 = "B181"           // Nothing Ear (1)
-        case ear2 = "B155"           // Nothing Ear (2)
-        case earStick = "B157"       // Nothing Ear (stick)
-        case earOpen = "B174"        // Nothing Ear (open)
-        case ear = "B171"            // Nothing Ear
-        case earA = "B162"           // Nothing Ear (a)
-        case headphone1 = "B175"     // Nothing Headphone (1)
-        case cmfBudsPro = "B163"     // CMF Buds Pro
-        case cmfBuds = "B168"        // CMF Buds
-        case cmfBudsPro2 = "B172"    // CMF Buds Pro 2
-        case cmfNeckbandPro = "B164" // CMF Neckband Pro
+    public enum Model: Sendable {
+        case ear1(Ear1)                     // Nothing Ear (1)
+        case ear2(Ear2)                     // Nothing Ear (2)
+        case earStick                       // Nothing Ear (stick)
+        case earOpen                        // Nothing Ear (open)
+        case ear(Ear)                       // Nothing Ear
+        case earA(EarA)                     // Nothing Ear (a)
+        case headphone1(Headphones1)        // Nothing Headphone (1)
+        case cmfBudsPro(CMFBudsPro)         // CMF Buds Pro
+        case cmfBuds(CMFBuds)               // CMF Buds
+        case cmfBudsPro2(CMFBudsPro2)       // CMF Buds Pro 2
+        case cmfNeckbandPro(CMFNeckbandPro) // CMF Neckband Pro
     }
 }
 
 extension NothingEar.Model {
+
+    public enum Ear1: Sendable {
+        case black
+        case white
+    }
+
+    public enum Ear2: Sendable {
+        case black
+        case white
+    }
+
+    public enum Ear: Sendable {
+        case black
+        case white
+    }
+
+    public enum EarA: Sendable {
+        case black
+        case white
+        case yellow
+    }
+
+    public enum Headphones1: Sendable {
+        case black
+        case grey
+    }
+
+    public enum CMFBudsPro: Sendable {
+        case orange
+        case white
+        case black
+    }
+
+    public enum CMFBuds: Sendable {
+        case black
+        case orange
+        case white
+    }
+
+    public enum CMFBudsPro2: Sendable {
+        case black
+        case blue
+        case orange
+        case white
+    }
+
+    public enum CMFNeckbandPro: Sendable {
+        case black
+        case orange
+        case white
+    }
 
     public var displayName: String {
         switch self {
@@ -36,6 +87,22 @@ extension NothingEar.Model {
         }
     }
 
+    public var code: String {
+        switch self {
+            case .ear1: "B181"
+            case .ear2: "B155"
+            case .earStick: "B157"
+            case .earOpen: "B174"
+            case .ear: "B171"
+            case .earA: "B162"
+            case .headphone1: "B175"
+            case .cmfBudsPro: "B163"
+            case .cmfBuds: "B168"
+            case .cmfBudsPro2: "B172"
+            case .cmfNeckbandPro: "B164"
+        }
+    }
+
     public var supportsANC: Bool {
         switch self {
             case .earStick, .earOpen:
@@ -46,7 +113,11 @@ extension NothingEar.Model {
     }
 
     public var supportsCustomEQ: Bool {
-        return self != .earStick
+        if case .earStick = self {
+            return false
+        }
+
+        return true
     }
 
     public var supportsEnhancedBass: Bool {
@@ -75,7 +146,7 @@ extension NothingEar.Model {
     static func getModel(fromSerialNumber serialNumber: String) -> Self? {
         // Handle special test serial number for Ear (1)
         if serialNumber == "12345678901234567" {
-            return .ear1
+            return .ear1(.white)
         }
 
         guard serialNumber.count >= 8 else {
@@ -109,7 +180,11 @@ extension NothingEar.Model {
                 sku = String(serialNumber[skuStart..<skuEnd])
 
             case "M3":
-                sku = "08"
+                // M3 prefixed serials: extract SKU from positions 3-6
+                guard serialNumber.count >= 6 else { return nil }
+                let skuStart = serialNumber.index(serialNumber.startIndex, offsetBy: 3)
+                let skuEnd = serialNumber.index(skuStart, offsetBy: 3)
+                sku = String(serialNumber[skuStart..<skuEnd])
 
             default:
                 sku = ""
@@ -120,17 +195,60 @@ extension NothingEar.Model {
 
     private static func getModel(fromSKU sku: String) -> Self? {
         return switch sku {
-            case "01": .ear1
-            case "14": .earStick
-            case "11200005": .earOpen
-            case "02": .ear2
-            case "03": .ear
-            case "04": .earA
-            case "05": .cmfBudsPro
-            case "06": .cmfBuds
-            case "07": .cmfBudsPro2
-            case "08": .headphone1
-            default: nil
+            case "01", "03", "07":
+                .ear1(.white)
+            case "02", "04", "06", "08", "10":
+                .ear1(.black)
+            case "14", "15", "16":
+                .earStick
+            case "11200005":
+                .earOpen
+            case "17", "18", "19":
+                .ear2(.white)
+            case "27", "28", "29":
+                .ear2(.black)
+            case "30", "31":
+                .cmfBudsPro(.black)
+            case "32", "33":
+                .cmfBudsPro(.white)
+            case "34", "35":
+                .cmfBudsPro(.orange)
+            case "48", "53":
+                .cmfNeckbandPro(.orange)
+            case "49", "52":
+                .cmfNeckbandPro(.white)
+            case "50", "51":
+                .cmfNeckbandPro(.black)
+            case "54", "55":
+                .cmfBuds(.black)
+            case "56", "57":
+                .cmfBuds(.white)
+            case "58", "59":
+                .cmfBuds(.orange)
+            case "61", "69", "74":
+                .ear(.black)
+            case "62", "70", "75":
+                .ear(.white)
+            case "63", "66", "71":
+                .earA(.black)
+            case "64", "67", "72":
+                .earA(.white)
+            case "65", "68", "73":
+                .earA(.yellow)
+            case "76", "83":
+                .cmfBudsPro2(.black)
+            case "77", "82":
+                .cmfBudsPro2(.white)
+            case "78", "81":
+                .cmfBudsPro2(.orange)
+            case "79", "80":
+                .cmfBudsPro2(.blue)
+            case "603":
+                .headphone1(.black)
+            case "606":
+                .headphone1(.grey)
+            default:
+                nil
         }
     }
 }

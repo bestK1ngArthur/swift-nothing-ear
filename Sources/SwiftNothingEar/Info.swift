@@ -8,7 +8,12 @@ extension NothingEar {
         public var bluetoothAddress: String?
         public var firmwareVersion: String?
 
-        public static let empty = Self(model: .ear, serialNumber: "", bluetoothAddress: nil, firmwareVersion: nil)
+        public static let empty = Self(
+            model: .ear(.black),
+            serialNumber: "",
+            bluetoothAddress: nil,
+            firmwareVersion: nil
+        )
     }
 
     public struct DeviceSettings: Sendable {
