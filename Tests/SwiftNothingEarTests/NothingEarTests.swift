@@ -7,24 +7,54 @@ final class NothingEarTests: XCTestCase {
 
     func testNothingEarModelProperties() {
         // Test ANC support
-        XCTAssertTrue(NothingEar.Model.ear1.supportsANC)
-        XCTAssertTrue(NothingEar.Model.ear2.supportsANC)
+        XCTAssertTrue(NothingEar.Model.ear1(.white).supportsANC)
+        XCTAssertTrue(NothingEar.Model.ear2(.white).supportsANC)
+        XCTAssertTrue(NothingEar.Model.ear3(.white).supportsANC)
         XCTAssertFalse(NothingEar.Model.earStick.supportsANC)
         XCTAssertFalse(NothingEar.Model.earOpen.supportsANC)
 
         // Test Custom EQ support
-        XCTAssertTrue(NothingEar.Model.ear1.supportsCustomEQ)
-        XCTAssertTrue(NothingEar.Model.ear2.supportsCustomEQ)
+        XCTAssertTrue(NothingEar.Model.ear1(.white).supportsCustomEQ)
+        XCTAssertTrue(NothingEar.Model.ear2(.white).supportsCustomEQ)
+        XCTAssertTrue(NothingEar.Model.ear3(.white).supportsCustomEQ)
         XCTAssertFalse(NothingEar.Model.earStick.supportsCustomEQ)
 
         // Test Enhanced Bass support
-        XCTAssertTrue(NothingEar.Model.ear.supportsEnhancedBass)
-        XCTAssertTrue(NothingEar.Model.cmfBudsPro2.supportsEnhancedBass)
-        XCTAssertFalse(NothingEar.Model.ear1.supportsEnhancedBass)
+        XCTAssertTrue(NothingEar.Model.ear(.white).supportsEnhancedBass)
+        XCTAssertTrue(NothingEar.Model.cmfBudsPro2(.white).supportsEnhancedBass)
+        XCTAssertFalse(NothingEar.Model.ear1(.white).supportsEnhancedBass)
+        XCTAssertFalse(NothingEar.Model.ear2(.white).supportsEnhancedBass)
+        XCTAssertFalse(NothingEar.Model.ear3(.white).supportsEnhancedBass)
 
         // Test display names
-        XCTAssertEqual(NothingEar.Model.ear1.displayName, "Nothing Ear (1)")
-        XCTAssertEqual(NothingEar.Model.cmfBudsPro.displayName, "CMF Buds Pro")
+        XCTAssertEqual(NothingEar.Model.ear1(.white).displayName, "Nothing Ear (1)")
+        XCTAssertEqual(NothingEar.Model.ear2(.white).displayName, "Nothing Ear (2)")
+        XCTAssertEqual(NothingEar.Model.ear3(.white).displayName, "Nothing Ear (3)")
+        XCTAssertEqual(NothingEar.Model.cmfBudsPro(.white).displayName, "CMF Buds Pro")
+    }
+
+    func testEar3SerialNumberDetection() {
+        // Test real serial number for white ear3
+        let whiteEar3Serial = "SH10252535010003"
+        let detectedModel = NothingEar.Model.getModel(fromSerialNumber: whiteEar3Serial)
+
+        XCTAssertNotNil(detectedModel)
+        if case .ear3(let color) = detectedModel {
+            XCTAssertEqual(color, .white)
+        } else {
+            XCTFail("Expected ear3(.white) but got \(String(describing: detectedModel))")
+        }
+
+        // Test hypothetical black ear3 serial
+        let blackEar3Serial = "SH10262635010003"
+        let detectedBlackModel = NothingEar.Model.getModel(fromSerialNumber: blackEar3Serial)
+
+        XCTAssertNotNil(detectedBlackModel)
+        if case .ear3(let color) = detectedBlackModel {
+            XCTAssertEqual(color, .black)
+        } else {
+            XCTFail("Expected ear3(.black) but got \(String(describing: detectedBlackModel))")
+        }
     }
 
     func testBatteryStatus() {
@@ -182,7 +212,7 @@ final class NothingEarTests: XCTestCase {
         let batteryResponse = NothingEar.BluetoothResponse(data: [0x55, 0x60, 0x01, 0x01, 0xE0, 0x05, 0x00, 0x01, 0x02, 0x02, 0x55, 0x03, 0x47])
         XCTAssertNotNil(batteryResponse)
         if let response = batteryResponse {
-            let battery = response.parseBattery(model: .ear1)
+            let battery = response.parseBattery(model: .ear1(.white))
             XCTAssertNotNil(battery)
             if case .budsWithCase(_, let leftBud, let rightBud) = battery {
                 XCTAssertEqual(leftBud.level, 85)
@@ -246,10 +276,10 @@ final class NothingEarTests: XCTestCase {
     // MARK: - Error Tests
 
     func testConnectionErrors() {
-        XCTAssertEqual(NothingEar.ConnectionError.bluetoothUnavailable.errorDescription,
+        XCTAssertEqual(NothingEar.ConnectionError.bluetooth(.unavailable).errorDescription,
                       "Bluetooth is not available on this device")
         XCTAssertEqual(NothingEar.ConnectionError.deviceNotFound.errorDescription,
-                      "Nothing Ear device not found")
+                      "Nothing device is not found")
         XCTAssertEqual(NothingEar.ConnectionError.connectionFailed.errorDescription,
                       "Failed to connect to device")
         XCTAssertEqual(NothingEar.ConnectionError.invalidResponse.errorDescription,

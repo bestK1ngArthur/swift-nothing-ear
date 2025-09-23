@@ -6,6 +6,7 @@ extension NothingEar {
     public enum Model: Sendable {
         case ear1(Ear1)                     // Nothing Ear (1)
         case ear2(Ear2)                     // Nothing Ear (2)
+        case ear3(Ear3)                     // Nothing Ear (3)
         case earStick                       // Nothing Ear (stick)
         case earOpen                        // Nothing Ear (open)
         case ear(Ear)                       // Nothing Ear
@@ -26,6 +27,11 @@ extension NothingEar.Model {
     }
 
     public enum Ear2: Sendable {
+        case black
+        case white
+    }
+
+    public enum Ear3: Sendable {
         case black
         case white
     }
@@ -75,6 +81,7 @@ extension NothingEar.Model {
         switch self {
             case .ear1: return "Nothing Ear (1)"
             case .ear2: return "Nothing Ear (2)"
+            case .ear3: return "Nothing Ear (3)"
             case .earStick: return "Nothing Ear (stick)"
             case .earOpen: return "Nothing Ear (open)"
             case .ear: return "Nothing Ear"
@@ -91,6 +98,7 @@ extension NothingEar.Model {
         switch self {
             case .ear1: "B181"
             case .ear2: "B155"
+            case .ear3: "B156"
             case .earStick: "B157"
             case .earOpen: "B174"
             case .ear: "B171"
@@ -207,6 +215,10 @@ extension NothingEar.Model {
                 .ear2(.white)
             case "27", "28", "29":
                 .ear2(.black)
+            case "25":
+                .ear3(.white)
+            case "26":
+                .ear3(.black)
             case "30", "31":
                 .cmfBudsPro(.black)
             case "32", "33":
