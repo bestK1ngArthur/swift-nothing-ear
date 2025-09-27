@@ -15,6 +15,7 @@ Special credits to:
 
 - 🟡 [Nothing Ear (1)](Docs/ear_1.md)
 - 🟡 [Nothing Ear (2)](Docs/ear_2.md)
+- 🟡 [Nothing Ear (3)](Docs/ear_3.md)
 - 🟡 [Nothing Ear (stick)](Docs/ear_stick.md)
 - 🟡 [Nothing Ear (open)](Docs/ear_open.md)
 - 🟡 [Nothing Ear](Docs/ear.md)
