@@ -26,6 +26,7 @@ extension NothingEar {
             static let listeningMode: UInt16   = 49232 // 0xC050
             static let personalizedANC: UInt16 = 49184 // 0xC020
             static let serialNumber: UInt16    = 49158 // 0xC006
+            static let spatialAudio: UInt16    = 49231 // 0xC04F
         }
 
         enum RequestWrite {
@@ -42,6 +43,7 @@ extension NothingEar {
             static let listeningMode: UInt16   = 61469 // 0xF01D
             static let personalizedANC: UInt16 = 61457 // 0xF011
             static let ringBuds: UInt16        = 61442 // 0xF002
+            static let spatialAudio: UInt16    = 61522 // 0xF052
         }
 
         enum Response {
@@ -62,6 +64,7 @@ extension NothingEar {
             static let ledCaseColor: UInt16    = 16407 // 0x4017
             static let personalizedANC: UInt16 = 16416 // 0x4020
             static let serialNumber: UInt16    = 16390 // 0x4006
+            static let spatialAudio: UInt16    = 16463 // 0x404F
         }
     }
 
@@ -296,6 +299,20 @@ extension NothingEar.BluetoothRequest {
             operationID: operationID
         )
     }
+
+    static func setSpatialAudioMode(
+        _ mode: NothingEar.SpatialAudioMode,
+        operationID: UInt8
+    ) -> Self {
+        let (firstByte, secondByte) = mode.rawValue8
+        let payload: [UInt8] = [firstByte, secondByte]
+        
+        return Self(
+            command: NothingEar.BluetoothCommand.RequestWrite.spatialAudio,
+            payload: payload,
+            operationID: operationID
+        )
+    }
 }
 
 // MARK: Bluetooth Response
@@ -476,6 +493,22 @@ extension NothingEar.BluetoothResponse {
 
         return .init(isEnabled: enabled, level: level)
     }
+
+    func parseSpatialAudioMode() -> NothingEar.SpatialAudioMode? {
+        guard payload.count >= 2 else {
+            return nil
+        }
+
+        let firstByte = payload[0]
+        let secondByte = payload[1]
+
+        switch (firstByte, secondByte) {
+            case (0x00, 0x00): return .off
+            case (0x01, 0x00): return .fixed
+            case (0x01, 0x01): return .headTracking
+            default: return nil
+        }
+    }
 }
 
 // MARK: Active Noise Cancellation Mode - Bytes
@@ -501,6 +534,28 @@ extension NothingEar.ANCMode {
             case 0x02: return .noiseCancellation(.mid)
             case 0x03: return .noiseCancellation(.low)
             case 0x04: return .noiseCancellation(.adaptive)
+            default: return nil
+        }
+    }
+}
+
+// MARK: Spatial Audio Mode - Bytes
+
+extension NothingEar.SpatialAudioMode {
+
+    var rawValue8: (UInt8, UInt8) {
+        switch self {
+            case .off: return (0x00, 0x00)
+            case .fixed: return (0x01, 0x00)
+            case .headTracking: return (0x01, 0x01)
+        }
+    }
+
+    static func from8BitValues(_ firstByte: UInt8, _ secondByte: UInt8) -> Self? {
+        switch (firstByte, secondByte) {
+            case (0x00, 0x00): return .off
+            case (0x01, 0x00): return .fixed
+            case (0x01, 0x01): return .headTracking
             default: return nil
         }
     }

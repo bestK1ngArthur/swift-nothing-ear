@@ -120,6 +120,15 @@ extension NothingEar.Model {
         }
     }
 
+    public var supportsSpatialAudio: Bool {
+        switch self {
+            case .ear1, .earStick:
+                return false
+            default:
+                return true
+        }
+    }
+
     public var supportsCustomEQ: Bool {
         if case .earStick = self {
             return false

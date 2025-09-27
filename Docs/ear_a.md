@@ -14,7 +14,7 @@
 | **Device Info** | 🟢 | Read serial number, firmware version, bluetooth address |
 | **Battery Status** | 🟢 | Read battery level and charging status |
 | **Active Noise Cancellation** | 🟢 | Read and change mode |
-| **Spatial Audio** | 🔴 | Not supported yet |
+| **Spatial Audio** | 🟢 | Read and change mode |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
 | **Equalizer Presets** | 🟢 | Read and set EQ presets |
 | **Gesture Controls** | 🟢 | Read and set gesture controls |

@@ -54,6 +54,12 @@ extension NothingEar {
         }
     }
 
+    public enum SpatialAudioMode: CaseIterable, Hashable, Sendable {
+        case off
+        case fixed
+        case headTracking
+    }
+
     public enum EQPreset: CaseIterable, Sendable {
         case balanced
         case voice
@@ -125,6 +131,19 @@ extension NothingEar.ANCMode.NoiseCancellation {
             case .mid: return "Mid"
             case .high: return "High"
             case .adaptive: return "Adaptive"
+        }
+    }
+}
+
+// MARK: Spatial Audio Mode
+
+extension NothingEar.SpatialAudioMode {
+
+    public var displayName: String {
+        switch self {
+            case .off: return "Off"
+            case .fixed: return "Fixed"
+            case .headTracking: return "Head-tracking"
         }
     }
 }

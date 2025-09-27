@@ -39,6 +39,7 @@ extension NothingEar {
 
         let onUpdateBattery: (Battery?) -> Void
         let onUpdateANCMode: (ANCMode?) -> Void
+        let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
         let onUpdateEnhancedBass: (EnhancedBassSettings?) -> Void
         let onUpdateEQPreset: (EQPreset?) -> Void
         let onUpdateDeviceSettings: (DeviceSettings) -> Void
@@ -51,6 +52,7 @@ extension NothingEar {
             onDisconnect: @escaping (Result<Void, Error>) -> Void,
             onUpdateBattery: @escaping (Battery?) -> Void,
             onUpdateANCMode: @escaping (ANCMode?) -> Void,
+            onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
             onUpdateEnhancedBass: @escaping (EnhancedBassSettings?) -> Void,
             onUpdateEQPreset: @escaping (EQPreset?) -> Void,
             onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
@@ -61,6 +63,7 @@ extension NothingEar {
             self.onDisconnect = onDisconnect
             self.onUpdateBattery = onUpdateBattery
             self.onUpdateANCMode = onUpdateANCMode
+            self.onUpdateSpatialAudio = onUpdateSpatialAudio
             self.onUpdateEnhancedBass = onUpdateEnhancedBass
             self.onUpdateEQPreset = onUpdateEQPreset
             self.onUpdateDeviceSettings = onUpdateDeviceSettings
@@ -80,6 +83,7 @@ extension NothingEar {
         public private(set) var ancMode: ANCMode?
         public private(set) var enhancedBass: EnhancedBassSettings?
         public private(set) var eqPreset: EQPreset?
+        public private(set) var spatialAudio: SpatialAudioMode?
 
         private let callback: Callback
 
@@ -257,6 +261,29 @@ extension NothingEar.Device {
         )
     }
 
+    public func setSpatialAudioMode(_ mode: NothingEar.SpatialAudioMode) {
+        guard isConnected else {
+            callback.onError(.connectionFailed)
+            return
+        }
+
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsSpatialAudio
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
+        sendRequest(
+            .setSpatialAudioMode(
+                mode,
+                operationID: nextOperationID()
+            )
+        )
+    }
+
+
     public func setGesture(
         type: NothingEar.GestureType,
         action: NothingEar.GestureAction,
@@ -305,7 +332,8 @@ extension NothingEar.Device {
             sendReadANCRequest,
             sendReadEQRequest,
             sendReadBatteryRequest,
-            sendReadGestureRequest
+            sendReadGestureRequest,
+            sendReadSpatialAudioRequest
         ]
 
         runTasks(tasks, delay: 0.1)
@@ -449,6 +477,24 @@ extension NothingEar.Device {
         sendRequest(request)
     }
 
+    private func sendReadSpatialAudioRequest() {
+        guard
+            let deviceInfo = deviceInfo,
+            deviceInfo.model.supportsSpatialAudio
+        else {
+            return
+        }
+
+        NothingEar.Logger.bluetooth.debug("🎧 Sending read spatial audio request")
+
+        let request = NothingEar.BluetoothRequest(
+            command: NothingEar.BluetoothCommand.RequestRead.spatialAudio,
+            payload: [],
+            operationID: nextOperationID()
+        )
+        sendRequest(request)
+    }
+
     private func sendRequest(_ request: NothingEar.BluetoothRequest) {
         guard
             let connectedPeripheral,
@@ -527,6 +573,15 @@ extension NothingEar.Device {
                     NothingEar.Logger.parsing.warning("🔇 Failed to parse ANC mode")
                 }
 
+            case NothingEar.BluetoothCommand.Response.spatialAudio:
+                if let spatialAudioMode = response.parseSpatialAudioMode() {
+                    self.spatialAudio = spatialAudioMode
+                    callback.onUpdateSpatialAudio(spatialAudioMode)
+                    NothingEar.Logger.parsing.info("🎧 Parsed spatial audio mode: \(spatialAudioMode.displayName, privacy: .public)")
+                } else {
+                    NothingEar.Logger.parsing.warning("🎧 Failed to parse spatial audio mode")
+                }
+
             case NothingEar.BluetoothCommand.Response.eqA,
                 NothingEar.BluetoothCommand.Response.eqB:
                 if let eqPreset = response.parseEQPreset() {
@@ -575,7 +630,8 @@ extension NothingEar.Device {
                 } else {
                     NothingEar.Logger.parsing.warning("👆 No gestures parsed from response")
                 }
-                default:
+
+            default:
                 NothingEar.Logger.parsing.warning("❓ Unknown response: command = \(response.command, privacy: .public), payload = \(response.payload.map { String(format: "%02X", $0) } .joined(separator: " "), privacy: .public)")
         }
     }
