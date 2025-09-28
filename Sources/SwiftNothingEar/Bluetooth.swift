@@ -448,7 +448,7 @@ extension NothingEar.BluetoothResponse {
 
             guard
                 parts.count == 3,
-                let device = Int(parts[0]),
+                let _ = Int(parts[0]),
                 let type = Int(parts[1])
             else {
                 continue

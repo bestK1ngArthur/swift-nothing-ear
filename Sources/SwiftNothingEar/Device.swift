@@ -709,8 +709,8 @@ extension NothingEar.Device: CBCentralManagerDelegate {
             peripheral.discoverServices(allServiceIds)
 
             if let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
-                for device in paired where device.name == peripheral.name {
-                    if let address = device.addressString {
+                for bluetoothDevice in paired where bluetoothDevice.name == peripheral.name {
+                    if let address = bluetoothDevice.addressString {
                         let bluetoothAddress = address
                             .replacingOccurrences(of: "-", with: ":")
                             .uppercased()
