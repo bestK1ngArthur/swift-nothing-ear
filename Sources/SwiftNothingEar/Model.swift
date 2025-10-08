@@ -4,18 +4,18 @@ extension NothingEar {
 
     /// Supported Nothing Ear device models
     public enum Model: Sendable {
-        case ear1(Ear1)                     // Nothing Ear (1)
-        case ear2(Ear2)                     // Nothing Ear (2)
-        case ear3(Ear3)                     // Nothing Ear (3)
-        case earStick                       // Nothing Ear (stick)
-        case earOpen                        // Nothing Ear (open)
-        case ear(Ear)                       // Nothing Ear
-        case earA(EarA)                     // Nothing Ear (a)
-        case headphone1(Headphones1)        // Nothing Headphone (1)
-        case cmfBudsPro(CMFBudsPro)         // CMF Buds Pro
-        case cmfBuds(CMFBuds)               // CMF Buds
-        case cmfBudsPro2(CMFBudsPro2)       // CMF Buds Pro 2
-        case cmfNeckbandPro(CMFNeckbandPro) // CMF Neckband Pro
+        case ear1(Ear1)                       // Nothing Ear (1)
+        case ear2(Ear2)                       // Nothing Ear (2)
+        case ear3(Ear3)                       // Nothing Ear (3)
+        case earStick                         // Nothing Ear (stick)
+        case earOpen                          // Nothing Ear (open)
+        case ear(Ear)                         // Nothing Ear
+        case earA(EarA)                       // Nothing Ear (a)
+        case headphone1(Headphone1)           // Nothing Headphone (1)
+        case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
+        case cmfBuds(CMFBuds)                 // CMF Buds
+        case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
+        case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
         case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
     }
 }
@@ -48,7 +48,7 @@ extension NothingEar.Model {
         case yellow
     }
 
-    public enum Headphones1: Sendable {
+    public enum Headphone1: Sendable {
         case black
         case grey
     }
