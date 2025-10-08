@@ -3,12 +3,6 @@ import Foundation
 
 extension NothingEar {
 
-    struct ServiceUUID {
-        let uuid: CBUUID
-        let writeCharacteristicUUID: CBUUID
-        let notifyCharacteristicUUID: CBUUID
-    }
-
     enum BluetoothCommand {
 
         enum RequestRead {
@@ -157,34 +151,6 @@ extension NothingEar {
     }
 }
 
-// MARK: Service UUID
-
-extension NothingEar.ServiceUUID {
-
-    static let ear = Self(
-        uuid: CBUUID(string: "AEAC4A03-DFF5-498F-843A-34487CF133EB"),
-        writeCharacteristicUUID: CBUUID(string: "AEAC4A03-DFF5-498F-843A-34487CF133EB"),
-        notifyCharacteristicUUID: CBUUID(string: "AEAC4A03-DFF5-498F-843A-34487CF133EB")
-    )
-
-    static let headphone = Self(
-        uuid: CBUUID(string: "FD90"),
-        writeCharacteristicUUID: CBUUID(string: "68745353-1810-4B13-83A2-C1B21B652C9B"),
-        notifyCharacteristicUUID: CBUUID(string: "CA235943-1810-45E6-8326-FC8CA3BC45CE")
-    )
-
-    static let all = [ear, headphone]
-
-    static func get(for model: NothingEar.Model) -> Self {
-        switch model {
-            case .headphone1:
-                return headphone
-            default:
-                return ear
-        }
-    }
-}
-
 // MARK: Bluetooth Request
 
 extension NothingEar.BluetoothRequest {
@@ -306,7 +272,7 @@ extension NothingEar.BluetoothRequest {
     ) -> Self {
         let (firstByte, secondByte) = mode.rawValue8
         let payload: [UInt8] = [firstByte, secondByte]
-        
+
         return Self(
             command: NothingEar.BluetoothCommand.RequestWrite.spatialAudio,
             payload: payload,

@@ -87,16 +87,47 @@ extension NothingEar {
 
         private let callback: Callback
 
+        // Fast Pair service UUID for discovering Nothing devices
+        private let fastPairUUID = CBUUID(string: "FE2C")
+
+        // Standard BLE services to filter out when looking for proprietary service
+        private let standardServices: Set<String> = [
+            "1800", // Generic Access
+            "1801", // Generic Attribute
+            "180A", // Device Information
+            "180F", // Battery Service
+            "1844", // LE Audio - Volume Control
+            "1846", // LE Audio - Audio Stream Control
+            "184D", // LE Audio - Published Audio Capabilities
+            "184E", // LE Audio - Common Audio Service
+            "184F", // LE Audio - Hearing Access Service
+            "1850", // LE Audio - Telephony and Media Audio
+            "1853", // LE Audio - Microphone Control
+            "1855", // LE Audio - Coordinated Set Identification
+            "FE2C"  // Fast Pair (used for discovery, not for communication)
+        ]
+
         private nonisolated(unsafe) var centralManager: CBCentralManager!
         private nonisolated(unsafe) var connectedPeripheral: CBPeripheral?
-        private nonisolated(unsafe) var serviceIds: ServiceUUID?
 
+        // Dynamically discovered characteristics
+        private nonisolated(unsafe) var proprietaryService: CBService?
         private nonisolated(unsafe) var writeCharacteristic: CBCharacteristic?
-        private nonisolated(unsafe) var readCharacteristic: CBCharacteristic?
         private nonisolated(unsafe) var notifyCharacteristic: CBCharacteristic?
+
+        // Service discovery state
+        private var candidateServices: [CBService] = []
+        private var servicesToCheck = 0
+        private var servicesChecked = 0
 
         private var operationID: UInt8 = 1
         private var pendingOperations: [UInt8: (Data) -> Void] = [:]
+
+        // Track initial device info loading state
+        private var hasReceivedSerialNumber = false
+        private var hasReceivedFirmware = false
+        private var isInitialConnectionComplete = false
+        private var connectionTimeoutTask: Task<Void, Never>?
 
         public init(_ callback: Callback) {
             self.callback = callback
@@ -126,7 +157,7 @@ extension NothingEar.Device {
         }
 
         connectionStatus = .scanning
-        centralManager.scanForPeripherals(withServices: allServiceIds, options: nil)
+        centralManager.scanForPeripherals(withServices: [fastPairUUID])
     }
 
     public func stopScanning() {
@@ -139,11 +170,11 @@ extension NothingEar.Device {
 
     @discardableResult
     public func checkAndConnectToExistingDevices() -> Bool {
-        let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: allServiceIds)
+        // Check for already connected peripherals with Fast Pair service
+        let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: [fastPairUUID])
 
         guard let peripheral = connectedPeripherals.first else {
             return false
-
         }
 
         connectionStatus = .foundConnected
@@ -283,7 +314,6 @@ extension NothingEar.Device {
         )
     }
 
-
     public func setGesture(
         type: NothingEar.GestureType,
         action: NothingEar.GestureAction,
@@ -311,18 +341,70 @@ extension NothingEar.Device {
 
 extension NothingEar.Device {
 
-    private var allServiceIds: [CBUUID] {
-        NothingEar.ServiceUUID.all.map { $0.uuid }
-    }
-
     private func refreshDeviceStatus() {
         guard isConnected else { return }
 
-        let tasks: [() -> Void] = [
-            // Request device info
-            sendReadSerialNumberRequest,
-            sendReadFirmwareRequest,
+        // Reset state flags for new connection
+        hasReceivedSerialNumber = false
+        hasReceivedFirmware = false
+        isInitialConnectionComplete = false
 
+        // Cancel any existing timeout task
+        connectionTimeoutTask?.cancel()
+
+        NothingEar.Logger.bluetooth.info("📋 Starting initial device info request")
+
+        // Start timeout task (10 seconds)
+        connectionTimeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 10_000_000_000) // 10s
+
+            guard !Task.isCancelled else { return }
+
+            if !isInitialConnectionComplete {
+                NothingEar.Logger.bluetooth.warning("⏱️ Connection timeout - device did not respond in time")
+                callback.onError(.timeout)
+
+                // Disconnect from device
+                if let peripheral = connectedPeripheral {
+                    centralManager.cancelPeripheralConnection(peripheral)
+                }
+            }
+        }
+
+        // First, request critical device info (serial number and firmware)
+        // We'll request other info only after receiving these
+        sendReadSerialNumberRequest()
+
+        // Send firmware request with a slight delay to avoid overwhelming the device
+        Task {
+            try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+            await MainActor.run {
+                sendReadFirmwareRequest()
+            }
+        }
+    }
+
+    private func completeInitialConnection() {
+        guard !isInitialConnectionComplete else { return }
+        guard hasReceivedSerialNumber && hasReceivedFirmware else { return }
+
+        isInitialConnectionComplete = true
+
+        // Cancel timeout task since we successfully received initial info
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
+
+        NothingEar.Logger.bluetooth.info("✅ Initial device info received, notifying connection success")
+
+        // Notify that connection is complete
+        if let deviceInfo {
+            callback.onConnect(.success(deviceInfo))
+        }
+
+        // Now request all other device information
+        NothingEar.Logger.bluetooth.info("📋 Requesting additional device information")
+
+        let tasks: [() -> Void] = [
             // Request device settings
             sendReadInEarRequest,
             sendReadLowLatencyRequest,
@@ -525,7 +607,11 @@ extension NothingEar.Device {
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber
                     }
+                    hasReceivedSerialNumber = true
                     NothingEar.Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
+
+                    // Check if we can complete the initial connection
+                    completeInitialConnection()
                 } else {
                     NothingEar.Logger.parsing.warning("🏷️ Failed to parse serial number from response")
                 }
@@ -536,11 +622,11 @@ extension NothingEar.Device {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.firmwareVersion = firmwareVersion
                     }
+                    hasReceivedFirmware = true
                     NothingEar.Logger.parsing.info("💾 Parsed firmware version: \(firmwareVersion, privacy: .public)")
 
-                    if let deviceInfo {
-                        callback.onConnect(.success(deviceInfo))
-                    }
+                    // Check if we can complete the initial connection
+                    completeInitialConnection()
                 } else {
                     NothingEar.Logger.parsing.warning("💾 Failed to parse firmware version")
                 }
@@ -694,6 +780,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         rssi RSSI: NSNumber
     ) {
         Task { @MainActor in
+            NothingEar.Logger.bluetooth.debug("🔍 Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) (RSSI: \(RSSI.intValue))")
             callback.onDiscover(peripheral)
         }
     }
@@ -705,9 +792,12 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         Task { @MainActor in
             connectionStatus = .connected
 
-            peripheral.delegate = self
-            peripheral.discoverServices(allServiceIds)
+            NothingEar.Logger.bluetooth.info("✅ Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
+            peripheral.delegate = self
+            peripheral.discoverServices(nil)
+
+            // Get bluetooth address from IOBluetooth
             if let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
                 for bluetoothDevice in paired where bluetoothDevice.name == peripheral.name {
                     if let address = bluetoothDevice.addressString {
@@ -728,8 +818,29 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
+        connectedPeripheral = nil
+        proprietaryService = nil
+        writeCharacteristic = nil
+        notifyCharacteristic = nil
+
         Task { @MainActor in
             connectionStatus = .disconnected
+
+            // Cancel timeout task if running
+            connectionTimeoutTask?.cancel()
+            connectionTimeoutTask = nil
+
+            // Reset connection state
+            hasReceivedSerialNumber = false
+            hasReceivedFirmware = false
+            isInitialConnectionComplete = false
+
+            // Reset service discovery state
+            candidateServices.removeAll()
+            servicesToCheck = 0
+            servicesChecked = 0
+
+            NothingEar.Logger.bluetooth.error("❌ Failed to connect to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
             if let error {
                 callback.onConnect(.failure(error))
@@ -743,11 +854,28 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         error: Error?
     ) {
         connectedPeripheral = nil
+        proprietaryService = nil
         writeCharacteristic = nil
-        readCharacteristic = nil
+        notifyCharacteristic = nil
 
         Task { @MainActor in
             connectionStatus = .disconnected
+
+            // Cancel timeout task if running
+            connectionTimeoutTask?.cancel()
+            connectionTimeoutTask = nil
+
+            // Reset connection state
+            hasReceivedSerialNumber = false
+            hasReceivedFirmware = false
+            isInitialConnectionComplete = false
+
+            // Reset service discovery state
+            candidateServices.removeAll()
+            servicesToCheck = 0
+            servicesChecked = 0
+
+            NothingEar.Logger.bluetooth.info("❌ Disconnected from peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
             if let error {
                 callback.onDisconnect(.failure(error))
@@ -773,15 +901,48 @@ extension NothingEar.Device: CBPeripheralDelegate {
             return
         }
 
-        // Determine device type and configure UUIDs
-        for service in peripheral.services ?? [] {
-            for serviceIds in NothingEar.ServiceUUID.all where service.uuid == serviceIds.uuid {
-                self.serviceIds = serviceIds
+        guard let services = peripheral.services else {
+            Task { @MainActor in
+                callback.onError(.connectionFailed)
+            }
+            return
+        }
 
-                let characteristicUUIDs = [serviceIds.writeCharacteristicUUID, serviceIds.notifyCharacteristicUUID]
-                peripheral.discoverCharacteristics(characteristicUUIDs, for: service)
+        // Create a local copy to avoid data races
+        let servicesCount = services.count
+        let serviceUUIDs = services.map { $0.uuid.uuidString.uppercased() }
 
-                break
+        // Log discovered services for debugging
+        Task { @MainActor in
+            NothingEar.Logger.bluetooth.debug("🔍 Discovered \(servicesCount) service(s)")
+            for uuid in serviceUUIDs {
+                NothingEar.Logger.bluetooth.debug("  📦 Service: \(uuid, privacy: .public)")
+            }
+        }
+
+        // Filter out standard BLE services to find proprietary Nothing service
+        Task { @MainActor in
+            let proprietaryCandidates = services.filter { service in
+                let serviceUUID = service.uuid.uuidString.uppercased()
+                return !standardServices.contains(serviceUUID)
+            }
+
+            candidateServices = proprietaryCandidates
+            servicesToCheck = proprietaryCandidates.count
+            servicesChecked = 0
+
+            NothingEar.Logger.bluetooth.info("🎯 Found \(proprietaryCandidates.count) proprietary service candidate(s) after filtering")
+
+            if proprietaryCandidates.isEmpty {
+                NothingEar.Logger.bluetooth.error("❌ No proprietary services found")
+                callback.onError(.connectionFailed)
+                return
+            }
+
+            // Discover characteristics for each candidate service
+            for service in proprietaryCandidates {
+                NothingEar.Logger.bluetooth.debug("🔍 Checking service: \(service.uuid.uuidString, privacy: .public)")
+                peripheral.discoverCharacteristics(nil, for: service)
             }
         }
     }
@@ -798,23 +959,171 @@ extension NothingEar.Device: CBPeripheralDelegate {
             return
         }
 
-        guard let serviceIds else { return }
+        guard let characteristics = service.characteristics, !characteristics.isEmpty else {
+            Task { @MainActor in
+                await handleServiceChecked()
+            }
+            return
+        }
 
-        for characteristic in service.characteristics ?? [] {
-            if characteristic.uuid == serviceIds.writeCharacteristicUUID {
-                writeCharacteristic = characteristic
-                readCharacteristic = characteristic // For backward compatibility
-            } else if characteristic.uuid == serviceIds.notifyCharacteristicUUID {
-                notifyCharacteristic = characteristic
-                peripheral.setNotifyValue(true, for: characteristic)
+        // Create local copies to avoid data races
+        let characteristicsCount = characteristics.count
+        let serviceUUID = service.uuid.uuidString
+        let charInfos = characteristics.map {
+            (uuid: $0.uuid.uuidString, properties: $0.properties)
+        }
 
-                // Start initial device status request
-                Task { @MainActor in
-                    refreshDeviceStatus()
-                }
-                break
+        Task { @MainActor in
+            NothingEar.Logger.bluetooth.debug("🔍 Discovered \(characteristicsCount) characteristic(s) for service \(serviceUUID, privacy: .public)")
+
+            for charInfo in charInfos {
+                let propsDesc = describeProperties(charInfo.properties)
+                NothingEar.Logger.bluetooth.debug("  🔧 Characteristic: \(charInfo.uuid, privacy: .public) - \(propsDesc, privacy: .public)")
+            }
+
+            // Analyze this service as a candidate
+            await analyzeServiceCandidate(service: service, characteristics: characteristics, peripheral: peripheral)
+        }
+    }
+
+    private func analyzeServiceCandidate(service: CBService, characteristics: [CBCharacteristic], peripheral: CBPeripheral) async {
+        // Look for write and notify characteristics
+        var foundWrite: CBCharacteristic?
+        var foundNotify: CBCharacteristic?
+
+        for characteristic in characteristics {
+            let properties = characteristic.properties
+
+            // Look for a characteristic with write properties
+            if properties.contains(.write) || properties.contains(.writeWithoutResponse) {
+                foundWrite = characteristic
+            }
+
+            // Look for a characteristic with notify property
+            if properties.contains(.notify) || properties.contains(.indicate) {
+                foundNotify = characteristic
             }
         }
+
+        // Calculate score for this service (higher is better)
+        let score = calculateServiceScore(
+            service: service,
+            hasWrite: foundWrite != nil,
+            hasNotify: foundNotify != nil,
+            writeChar: foundWrite,
+            notifyChar: foundNotify
+        )
+
+        NothingEar.Logger.bluetooth.debug("📊 Service \(service.uuid.uuidString, privacy: .public) score: \(score)")
+
+        // If this service has both write and notify, consider it
+        if let write = foundWrite, let notify = foundNotify {
+            // If we don't have a service yet, or this one has a better score
+            let shouldUseThisService = proprietaryService == nil || score > getCurrentServiceScore()
+
+            if shouldUseThisService {
+                NothingEar.Logger.bluetooth.info("✅ Selected service: \(service.uuid.uuidString, privacy: .public)")
+
+                proprietaryService = service
+                writeCharacteristic = write
+                notifyCharacteristic = notify
+
+                NothingEar.Logger.bluetooth.info("✍️ Write characteristic: \(write.uuid.uuidString, privacy: .public)")
+                NothingEar.Logger.bluetooth.info("🔔 Notify characteristic: \(notify.uuid.uuidString, privacy: .public)")
+            }
+        }
+
+        await handleServiceChecked()
+    }
+
+    private func calculateServiceScore(
+        service: CBService,
+        hasWrite: Bool,
+        hasNotify: Bool,
+        writeChar: CBCharacteristic?,
+        notifyChar: CBCharacteristic?
+    ) -> Int {
+        var score = 0
+
+        // Must have both write and notify
+        guard hasWrite && hasNotify else { return -1 }
+
+        score += 100 // Base score for having both
+
+        let serviceUUID = service.uuid.uuidString.uppercased()
+
+        // Prefer 0xFDxx services (common for proprietary)
+        if serviceUUID.hasPrefix("FD") && serviceUUID.count == 4 {
+            score += 50
+        }
+
+        // Prefer 128-bit UUIDs (very likely proprietary)
+        if serviceUUID.count > 8 {
+            score += 30
+        }
+
+        // Prefer .write over .writeWithoutResponse
+        if let write = writeChar, write.properties.contains(.write) {
+            score += 10
+        }
+
+        // Prefer .notify over .indicate
+        if let notify = notifyChar, notify.properties.contains(.notify) {
+            score += 10
+        }
+
+        return score
+    }
+
+    private func getCurrentServiceScore() -> Int {
+        guard let service = proprietaryService,
+              let write = writeCharacteristic,
+              let notify = notifyCharacteristic else {
+            return -1
+        }
+
+        return calculateServiceScore(
+            service: service,
+            hasWrite: true,
+            hasNotify: true,
+            writeChar: write,
+            notifyChar: notify
+        )
+    }
+
+    private func handleServiceChecked() async {
+        servicesChecked += 1
+
+        // Check if we've analyzed all candidate services
+        if servicesChecked >= servicesToCheck {
+            if let service = proprietaryService,
+               writeCharacteristic != nil,
+               let notify = notifyCharacteristic,
+               let peripheral = connectedPeripheral {
+
+                NothingEar.Logger.bluetooth.info("🚀 Communication channels established with service \(service.uuid.uuidString, privacy: .public)")
+
+                // Enable notifications
+                peripheral.setNotifyValue(true, for: notify)
+
+                // Start device status refresh
+                refreshDeviceStatus()
+            } else {
+                NothingEar.Logger.bluetooth.error("❌ Failed to find suitable proprietary service with write+notify characteristics")
+                callback.onError(.connectionFailed)
+            }
+        }
+    }
+
+    // Helper function to describe characteristic properties
+    private func describeProperties(_ properties: CBCharacteristicProperties) -> String {
+        var props: [String] = []
+        if properties.contains(.read) { props.append("read") }
+        if properties.contains(.write) { props.append("write") }
+        if properties.contains(.writeWithoutResponse) { props.append("writeWithoutResponse") }
+        if properties.contains(.notify) { props.append("notify") }
+        if properties.contains(.indicate) { props.append("indicate") }
+        return props.joined(separator: ", ")
     }
 
     nonisolated public func peripheral(
