@@ -2,7 +2,7 @@
 
 ## Device Information
 
-- **Model Code**: `B175`
+- **Model Code**: `B170`
 - **Display Name**: Nothing Headphone (1)
 - **Device Type**: Full-size headphones
 

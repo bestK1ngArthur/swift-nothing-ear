@@ -325,7 +325,7 @@ extension NothingEar.BluetoothResponse {
         }
 
         switch model {
-        case .headphone1:
+        case .headphone1, .cmfHeadphonePro:
             // Expect exactly 3 bytes: [header, ?, batteryData]
             guard payload.count == 3 else {
                 return nil

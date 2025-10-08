@@ -16,6 +16,7 @@ extension NothingEar {
         case cmfBuds(CMFBuds)               // CMF Buds
         case cmfBudsPro2(CMFBudsPro2)       // CMF Buds Pro 2
         case cmfNeckbandPro(CMFNeckbandPro) // CMF Neckband Pro
+        case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
     }
 }
 
@@ -77,6 +78,12 @@ extension NothingEar.Model {
         case white
     }
 
+    public enum CMFHeadphonePro: Sendable {
+        case lightGreen
+        case lightGrey
+        case darkGrey
+    }
+
     public var displayName: String {
         switch self {
             case .ear1: return "Nothing Ear (1)"
@@ -91,6 +98,7 @@ extension NothingEar.Model {
             case .cmfBuds: return "CMF Buds"
             case .cmfBudsPro2: return "CMF Buds Pro 2"
             case .cmfNeckbandPro: return "CMF Neckband Pro"
+            case .cmfHeadphonePro: return "CMF Headphone Pro"
         }
     }
 
@@ -100,14 +108,15 @@ extension NothingEar.Model {
             case .ear2: "B155"
             case .ear3: "B156"
             case .earStick: "B157"
-            case .earOpen: "B174"
+            case .earOpen: "B182"
             case .ear: "B171"
             case .earA: "B162"
-            case .headphone1: "B175"
+            case .headphone1: "B170"
             case .cmfBudsPro: "B163"
             case .cmfBuds: "B168"
             case .cmfBudsPro2: "B172"
             case .cmfNeckbandPro: "B164"
+            case .cmfHeadphonePro: "B175"
         }
     }
 
@@ -139,7 +148,7 @@ extension NothingEar.Model {
 
     public var supportsEnhancedBass: Bool {
         switch self {
-            case .ear, .cmfBudsPro2, .cmfBuds, .earA, .headphone1:
+            case .ear, .cmfBudsPro2, .cmfBuds, .earA, .headphone1, .cmfHeadphonePro:
                 return true
             default:
                 return false
@@ -268,6 +277,12 @@ extension NothingEar.Model {
                 .headphone1(.black)
             case "606":
                 .headphone1(.grey)
+            case "84", "87":
+                .cmfHeadphonePro(.darkGrey)
+            case "85", "88":
+                .cmfHeadphonePro(.lightGrey)
+            case "86", "89":
+                .cmfHeadphonePro(.lightGreen)
             default:
                 nil
         }
