@@ -1,8 +1,11 @@
 @preconcurrency import CoreBluetooth
 import Combine
 import Foundation
-import IOBluetooth
 import os.log
+
+#if os(macOS)
+import IOBluetooth
+#endif
 
 extension NothingEar {
 
@@ -717,6 +720,15 @@ extension NothingEar.Device {
                     NothingEar.Logger.parsing.warning("👆 No gestures parsed from response")
                 }
 
+            case NothingEar.BluetoothCommand.Response.ringBuds:
+                if let ringBuds = response.parseRingBuds() {
+                    self.ringBuds = ringBuds
+                    callback.onUpdateRingBuds(ringBuds)
+                    NothingEar.Logger.parsing.info("🔔 Parsed ring buds: \(ringBuds.isOn ? "ringing" : "not ringing", privacy: .public)")
+                } else {
+                    NothingEar.Logger.parsing.info("🔔 ⚡ Failed to parse ring bugs")
+                }
+
             default:
                 NothingEar.Logger.parsing.warning("❓ Unknown response: command = \(response.command, privacy: .public), payload = \(response.payload.map { String(format: "%02X", $0) } .joined(separator: " "), privacy: .public)")
         }
@@ -797,6 +809,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
             peripheral.delegate = self
             peripheral.discoverServices(nil)
 
+            #if os(macOS)
             // Get bluetooth address from IOBluetooth
             if let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
                 for bluetoothDevice in paired where bluetoothDevice.name == peripheral.name {
@@ -810,6 +823,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
                     }
                 }
             }
+            #endif
         }
     }
 

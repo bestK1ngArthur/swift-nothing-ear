@@ -6,7 +6,8 @@ import PackageDescription
 let package = Package(
     name: "SwiftNothingEar",
     platforms: [
-        .macOS(.v12)
+        .macOS(.v12),
+        .iOS(.v17)
     ],
     products: [
         .library(
