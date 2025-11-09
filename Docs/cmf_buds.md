@@ -21,7 +21,7 @@
 | **In-Ear Detection** | 🟢 | Read and set |
 | **Personalized ANC** | 🟡 | Available in device settings |
 | **Low Latency Mode** | 🟢 | Read and set |
-| **Find My Earbuds** | 🔴 | Not supported yet |
+| **Find My Earbuds** | 🟢 | Read and set |
 | **High Quality Audio** | ⚫ | Not supported by device |
 
 - 🟢 Supported

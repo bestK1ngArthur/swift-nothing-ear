@@ -2,7 +2,7 @@
 
 > It's unofficial software and not affilated with Nothing ([legal](#legal-disclaimer))
 
-Swift Package for interacting with Nothing headphones on macOS.
+Swift Package for interacting with Nothing headphones on macOS and iOS.
 
 Special credits to:
 
