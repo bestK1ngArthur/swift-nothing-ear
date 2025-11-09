@@ -305,6 +305,7 @@ final class NothingEarTests: XCTestCase {
             onUpdateEnhancedBass: { _ in },
             onUpdateEQPreset: { _ in },
             onUpdateDeviceSettings: { _ in },
+            onUpdateRingBuds: { _ in },
             onError: { _ in }
         )
 
@@ -332,6 +333,7 @@ final class NothingEarTests: XCTestCase {
             onUpdateEnhancedBass: { _ in },
             onUpdateEQPreset: { _ in },
             onUpdateDeviceSettings: { _ in },
+            onUpdateRingBuds: { _ in },
             onError: { _ in }
         )
 
@@ -379,6 +381,7 @@ final class NothingEarTests: XCTestCase {
             onUpdateEnhancedBass: { _ in },
             onUpdateEQPreset: { _ in },
             onUpdateDeviceSettings: { _ in },
+            onUpdateRingBuds: { _ in },
             onError: { _ in }
         )
 
@@ -407,6 +410,7 @@ final class NothingEarTests: XCTestCase {
             onUpdateEnhancedBass: { _ in },
             onUpdateEQPreset: { _ in },
             onUpdateDeviceSettings: { _ in },
+            onUpdateRingBuds: { _ in },
             onError: { _ in }
         )
 
