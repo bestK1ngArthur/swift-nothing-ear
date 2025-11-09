@@ -46,6 +46,7 @@ extension NothingEar {
         let onUpdateEnhancedBass: (EnhancedBassSettings?) -> Void
         let onUpdateEQPreset: (EQPreset?) -> Void
         let onUpdateDeviceSettings: (DeviceSettings) -> Void
+        let onUpdateRingBuds: (RingBuds) -> Void
 
         let onError: (ConnectionError) -> Void
 
@@ -59,6 +60,7 @@ extension NothingEar {
             onUpdateEnhancedBass: @escaping (EnhancedBassSettings?) -> Void,
             onUpdateEQPreset: @escaping (EQPreset?) -> Void,
             onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
+            onUpdateRingBuds: @escaping (RingBuds) -> Void,
             onError: @escaping (ConnectionError) -> Void
         ) {
             self.onDiscover = onDiscover
@@ -70,6 +72,7 @@ extension NothingEar {
             self.onUpdateEnhancedBass = onUpdateEnhancedBass
             self.onUpdateEQPreset = onUpdateEQPreset
             self.onUpdateDeviceSettings = onUpdateDeviceSettings
+            self.onUpdateRingBuds = onUpdateRingBuds
             self.onError = onError
         }
     }
@@ -87,6 +90,7 @@ extension NothingEar {
         public private(set) var enhancedBass: EnhancedBassSettings?
         public private(set) var eqPreset: EQPreset?
         public private(set) var spatialAudio: SpatialAudioMode?
+        public private(set) var ringBuds: RingBuds?
 
         private let callback: Callback
 
@@ -338,6 +342,28 @@ extension NothingEar.Device {
             )
         )
     }
+
+    public func setRingBuds(_ ringBuds: NothingEar.RingBuds) {
+        guard isConnected else {
+            callback.onError(.connectionFailed)
+            return
+        }
+
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsRingBuds
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
+        sendRequest(
+            .setRingBuds(
+                ringBuds,
+                operationID: nextOperationID()
+            )
+        )
+    }
 }
 
 // MARK: Private Methods
@@ -418,7 +444,8 @@ extension NothingEar.Device {
             sendReadEQRequest,
             sendReadBatteryRequest,
             sendReadGestureRequest,
-            sendReadSpatialAudioRequest
+            sendReadSpatialAudioRequest,
+            sendReadRingBudsRequest
         ]
 
         runTasks(tasks, delay: 0.1)
@@ -574,6 +601,23 @@ extension NothingEar.Device {
 
         let request = NothingEar.BluetoothRequest(
             command: NothingEar.BluetoothCommand.RequestRead.spatialAudio,
+            payload: [],
+            operationID: nextOperationID()
+        )
+        sendRequest(request)
+    }
+
+    private func sendReadRingBudsRequest() {
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsRingBuds
+        else {
+            return
+        }
+
+        NothingEar.Logger.bluetooth.debug("🔔 Sending read ring buds request")
+        let request = NothingEar.BluetoothRequest(
+            command: NothingEar.BluetoothCommand.RequestRead.ringBuds,
             payload: [],
             operationID: nextOperationID()
         )

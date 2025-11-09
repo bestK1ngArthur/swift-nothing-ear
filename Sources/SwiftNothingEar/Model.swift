@@ -163,6 +163,15 @@ extension NothingEar.Model {
                 return true
         }
     }
+
+    public var supportsRingBuds: Bool {
+        switch self {
+            case .ear1:
+                return false
+            default:
+                return true
+        }
+    }
 }
 
 // MARK: Model Detection

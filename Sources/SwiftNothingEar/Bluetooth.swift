@@ -21,6 +21,7 @@ extension NothingEar {
             static let personalizedANC: UInt16 = 49184 // 0xC020
             static let serialNumber: UInt16    = 49158 // 0xC006
             static let spatialAudio: UInt16    = 49231 // 0xC04F
+            static let ringBuds: UInt16        = 49154 // 0xC002
         }
 
         enum RequestWrite {
@@ -59,6 +60,7 @@ extension NothingEar {
             static let personalizedANC: UInt16 = 16416 // 0x4020
             static let serialNumber: UInt16    = 16390 // 0x4006
             static let spatialAudio: UInt16    = 16463 // 0x404F
+            static let ringBuds: UInt16        = 16386 // 0x4002
         }
     }
 
@@ -279,6 +281,25 @@ extension NothingEar.BluetoothRequest {
             operationID: operationID
         )
     }
+
+    static func setRingBuds(
+        _ ringBuds: NothingEar.RingBuds,
+        operationID: UInt8
+    ) -> Self {
+        let firstByte: UInt8 = switch ringBuds.bud {
+            case .left: 0x01
+            case .right: 0x03
+            case .unibody: 0x06
+        }
+        let secondByte: UInt8 = ringBuds.isOn ? 0x01 : 0x00
+        let payload: [UInt8] = [firstByte, secondByte]
+
+        return Self(
+            command: NothingEar.BluetoothCommand.RequestWrite.ringBuds,
+            payload: payload,
+            operationID: operationID
+        )
+    }
 }
 
 // MARK: Bluetooth Response
@@ -474,6 +495,27 @@ extension NothingEar.BluetoothResponse {
             case (0x01, 0x01): return .headTracking
             default: return nil
         }
+    }
+
+    func parseRingBuds() -> NothingEar.RingBuds? {
+        guard payload.count >= 3 else {
+            return nil
+        }
+
+        let budByte = payload[1]
+        let onByte = payload[2]
+
+        let bud: NothingEar.RingBuds.Bud = switch budByte {
+            case 0x01: .left
+            case 0x03: .right
+            case 0x06: .unibody
+            default: .left
+        }
+
+        return .init(
+            isOn: onByte == 0x01,
+            bud: bud
+        )
     }
 }
 
