@@ -113,14 +113,18 @@ extension NothingEar {
                 // Read CRC low and high bytes (little-endian)
                 let receivedCRC = UInt16(data[crcIndex]) | (UInt16(data[crcIndex + 1]) << 8)
 
-                // Calculate CRC over header + command + length + reserved + opID + payload
-                let calculatedCRC = CRC16.calculate(
-                    data: Array(data[0..<crcIndex])
-                )
+                // Calculate CRC over the full packet (header + payload), which is what
+                // most Nothing devices use today.
+                let headerCRC = CRC16.calculate(data: Array(data[0..<crcIndex]))
 
-                // Fail init if CRC does not match
-                guard receivedCRC == calculatedCRC else {
-                    return nil
+                if receivedCRC != headerCRC {
+                    // Some newer models (e.g. CMF Buds Pro 2) only include the payload
+                    // when producing the CRC bytes. Try that as a secondary strategy so
+                    // we can accept both formats.
+                    let payloadCRC = CRC16.calculate(data: Array(data[8..<crcIndex]))
+                    guard receivedCRC == payloadCRC else {
+                        return nil
+                    }
                 }
             }
         }
