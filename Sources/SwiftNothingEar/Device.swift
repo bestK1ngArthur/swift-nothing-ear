@@ -653,8 +653,9 @@ extension NothingEar.Device {
 
         switch response.command {
             case NothingEar.BluetoothCommand.Response.serialNumber:
+                let deviceName = connectedPeripheral?.name ?? "Unknown"
                 if let serialNumber = response.parseSerialNumber(),
-                   let detectedModel = NothingEar.Model.getModel(fromSerialNumber: serialNumber) {
+                   let detectedModel = NothingEar.Model.getModel(for: deviceName, serialNumber: serialNumber) {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber

@@ -178,7 +178,44 @@ extension NothingEar.Model {
 
 extension NothingEar.Model {
 
-    static func getModel(fromSerialNumber serialNumber: String) -> Self? {
+    static func getModel(for deviceName: String, serialNumber: String) -> Self? {
+        // Try to detect model by name without color
+        let modelByName: Self? = switch deviceName {
+            case "Nothing Ear (1)": .ear1(.black)
+            case "Nothing Ear (2)": .ear2(.black)
+            case "Nothing Ear (3)": .ear3(.black)
+            case "Nothing Ear (stick)": .earStick
+            case "Nothing Ear (open)": .earOpen
+            case "Nothing Ear": .ear(.black)
+            case "Nothing Ear (a)": .earA(.black)
+            case "Nothing Headphone (1)": .headphone1(.black)
+            case "CMF Buds Pro": .cmfBudsPro(.black)
+            case "CMF Buds": .cmfBuds(.black)
+            case "CMF Buds Pro 2": .cmfBudsPro2(.black)
+            case "CMF Neckband Pro": .cmfNeckbandPro(.black)
+            case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
+            default: nil
+        }
+
+        // Try to detect model by serial with color
+        let modelBySerial = getModel(from: serialNumber)
+
+        guard let modelBySerial else {
+            return modelByName
+        }
+
+        guard let modelByName else {
+            return modelBySerial
+        }
+
+        guard Self.isBaseEqual(lhs: modelByName, rhs: modelBySerial) else {
+            return modelByName
+        }
+
+        return modelBySerial
+    }
+
+    static func getModel(from serialNumber: String) -> Self? {
         // Handle special test serial number for Ear (1)
         if serialNumber == "12345678901234567" {
             return .ear1(.white)
@@ -294,6 +331,28 @@ extension NothingEar.Model {
                 .cmfHeadphonePro(.lightGreen)
             default:
                 nil
+        }
+    }
+}
+
+extension NothingEar.Model {
+
+    static func isBaseEqual(lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+            case (.ear1, .ear1): true
+            case (.ear2, .ear2): true
+            case (.ear3, .ear3): true
+            case (.earStick, .earStick): true
+            case (.earOpen, .earOpen): true
+            case (.ear, .ear): true
+            case (.earA, .earA): true
+            case (.headphone1, .headphone1): true
+            case (.cmfBudsPro, .cmfBudsPro): true
+            case (.cmfBuds, .cmfBuds): true
+            case (.cmfBudsPro2, .cmfBudsPro2): true
+            case (.cmfNeckbandPro, .cmfNeckbandPro): true
+            case (.cmfHeadphonePro, .cmfHeadphonePro): true
+            default: false
         }
     }
 }
