@@ -114,6 +114,11 @@ extension NothingEar {
             "FE2C"  // Fast Pair (used for discovery, not for communication)
         ]
 
+        // Known proprietary services from Nothing/CMF devices, prioritised when scoring
+        private let preferredProprietaryServices: [String: Int] = [
+            "0000FD90-0000-1000-8000-00805F9B34FB": 300 // Nothing Ear / CMF control service
+        ]
+
         private nonisolated(unsafe) var centralManager: CBCentralManager!
         private nonisolated(unsafe) var connectedPeripheral: CBPeripheral?
 
@@ -648,8 +653,9 @@ extension NothingEar.Device {
 
         switch response.command {
             case NothingEar.BluetoothCommand.Response.serialNumber:
+                let deviceName = connectedPeripheral?.name ?? "Unknown"
                 if let serialNumber = response.parseSerialNumber(),
-                   let detectedModel = NothingEar.Model.getModel(fromSerialNumber: serialNumber) {
+                   let detectedModel = NothingEar.Model.getModel(for: deviceName, serialNumber: serialNumber) {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber
@@ -1076,8 +1082,8 @@ extension NothingEar.Device: CBPeripheralDelegate {
 
         // If this service has both write and notify, consider it
         if let write = foundWrite, let notify = foundNotify {
-            // If we don't have a service yet, or this one has a better score
-            let shouldUseThisService = proprietaryService == nil || score > getCurrentServiceScore()
+            // If we don't have a service yet, or this one has an equal/better score
+            let shouldUseThisService = proprietaryService == nil || score >= getCurrentServiceScore()
 
             if shouldUseThisService {
                 NothingEar.Logger.bluetooth.info("✅ Selected service: \(service.uuid.uuidString, privacy: .public)")
@@ -1118,6 +1124,11 @@ extension NothingEar.Device: CBPeripheralDelegate {
         // Prefer 128-bit UUIDs (very likely proprietary)
         if serviceUUID.count > 8 {
             score += 30
+        }
+
+        // Strongly prefer known Nothing/CMF proprietary services
+        if let bonus = preferredProprietaryServices[serviceUUID] {
+            score += bonus
         }
 
         // Prefer .write over .writeWithoutResponse

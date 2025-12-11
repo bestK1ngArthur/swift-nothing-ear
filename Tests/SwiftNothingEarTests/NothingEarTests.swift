@@ -271,6 +271,27 @@ final class NothingEarTests: XCTestCase {
         XCTAssertEqual(response?.command, 0xC007)
         XCTAssertEqual(response?.operationID, 1)
         XCTAssertEqual(response?.payload, [0x85, 0x90])
+
+        // CMF Buds Pro 2 packets calculate CRC by using the payload only.
+        var payloadOnlyPacket: [UInt8] = [
+            0x55, 0x60, 0x01, // Header
+            0x06, 0x40,       // Command (serial number response)
+            0x04,             // Payload length
+            0x00,             // Reserved
+            0x02              // Operation ID
+        ]
+        let payload: [UInt8] = [0x0C, 0x32, 0x2C, 0x31]
+        payloadOnlyPacket.append(contentsOf: payload)
+
+        let payloadCRC = NothingEar.CRC16.calculate(data: payload)
+        payloadOnlyPacket.append(UInt8(payloadCRC & 0xFF))
+        payloadOnlyPacket.append(UInt8(payloadCRC >> 8))
+
+        let payloadOnlyResponse = NothingEar.BluetoothResponse(data: payloadOnlyPacket)
+        XCTAssertNotNil(payloadOnlyResponse)
+        XCTAssertEqual(payloadOnlyResponse?.command, 0x4006)
+        XCTAssertEqual(payloadOnlyResponse?.operationID, 0x02)
+        XCTAssertEqual(payloadOnlyResponse?.payload, payload)
     }
 
     // MARK: - Error Tests
