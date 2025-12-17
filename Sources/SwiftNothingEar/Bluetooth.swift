@@ -470,7 +470,7 @@ extension NothingEar.BluetoothResponse {
             }
 
             return trimmedLeading.filter { byte in
-                byte >= 0x20 || byte == 0x0A || byte == 0x0D
+                (byte >= 0x20 && byte < 0x80) || byte == 0x0A || byte == 0x0D
             }
         }
 
