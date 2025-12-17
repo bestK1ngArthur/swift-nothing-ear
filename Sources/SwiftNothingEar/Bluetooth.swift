@@ -458,23 +458,38 @@ extension NothingEar.BluetoothResponse {
             return nil
         }
 
-        // Some devices prepend control bytes before the CSV text.
-        let trimmedControlBytes = Array(
-            payload.drop { byte in
-                byte < 0x20 && byte != 0x0A && byte != 0x0D
+        func sanitizePayload(_ bytes: [UInt8]) -> [UInt8] {
+            let trimmedLeading = Array(
+                bytes.drop(while: { byte in
+                    byte < 0x20 && byte != 0x0A && byte != 0x0D
+                })
+            )
+
+            guard !trimmedLeading.isEmpty else {
+                return []
             }
-        )
+
+            return trimmedLeading.filter { byte in
+                byte >= 0x20 || byte == 0x0A || byte == 0x0D
+            }
+        }
 
         // Try payload variations to support older and newer formats.
-        let candidates: [[UInt8]] = [
-            trimmedControlBytes,
-            payload.count > 7 ? Array(payload[7...]) : [],
-            payload
+        let baseCandidates: [[UInt8]] = [
+            payload,
+            payload.count > 7 ? Array(payload[7...]) : []
         ].filter { !$0.isEmpty }
 
-        for candidate in candidates {
-            if let serial = extractSerial(from: candidate) {
-                return serial
+        for base in baseCandidates {
+            let variations = [
+                sanitizePayload(base),
+                base
+            ].filter { !$0.isEmpty }
+
+            for candidate in variations {
+                if let serial = extractSerial(from: candidate) {
+                    return serial
+                }
             }
         }
 
