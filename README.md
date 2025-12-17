@@ -23,6 +23,7 @@ Special credits to:
 - 🟢 [Nothing Headphone (1)](Docs/headphones_1.md)
 - 🟡 [CMF Buds Pro](Docs/cmf_buds_pro.md)
 - 🟡 [CMF Buds](Docs/cmf_buds.md)
+- 🟡 [CMF Buds 2](Docs/cmf_buds_2.md)
 - 🟡 [CMF Buds Pro 2](Docs/cmf_buds_pro_2.md)
 - 🟡 [CMF Neckband Pro](Docs/cmf_neckband_pro.md)
 - 🟡 [CMF Headphone Pro](Docs/cmf_headphone_pro.md)
