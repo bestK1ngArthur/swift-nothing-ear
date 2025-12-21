@@ -127,56 +127,19 @@ extension DeviceModel {
     }
 
     public var supportsANC: Bool {
-        switch self {
-            case .earStick, .earOpen:
-                return false
-            default:
-                return true
-        }
+        ANCMode.isSupported(by: self)
     }
 
     public var supportsSpatialAudio: Bool {
-        switch self {
-            case .ear1, .earStick:
-                return false
-            default:
-                return true
-        }
-    }
-
-    public var supportsCustomEQ: Bool {
-        if case .earStick = self {
-            return false
-        }
-
-        return true
+        SpatialAudioMode.isSupported(by: self)
     }
 
     public var supportsEnhancedBass: Bool {
-        switch self {
-            case .ear, .cmfBudsPro2, .cmfBuds, .cmfBuds2, .earA, .headphone1, .cmfHeadphonePro:
-                return true
-            default:
-                return false
-        }
-    }
-
-    public var supportsInEarDetection: Bool {
-        switch self {
-            case .earOpen:
-                return false
-            default:
-                return true
-        }
+        EnhancedBass.isSupported(by: self)
     }
 
     public var supportsRingBuds: Bool {
-        switch self {
-            case .ear1:
-                return false
-            default:
-                return true
-        }
+        RingBuds.isSupported(by: self)
     }
 }
 

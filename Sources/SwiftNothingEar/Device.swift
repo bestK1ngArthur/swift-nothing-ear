@@ -41,7 +41,7 @@ public struct Callback {
     let onUpdateBattery: (Battery?) -> Void
     let onUpdateANCMode: (ANCMode?) -> Void
     let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
-    let onUpdateEnhancedBass: (EnhancedBassSettings?) -> Void
+    let onUpdateEnhancedBass: (EnhancedBass?) -> Void
     let onUpdateEQPreset: (EQPreset?) -> Void
     let onUpdateDeviceSettings: (DeviceSettings) -> Void
     let onUpdateRingBuds: (RingBuds) -> Void
@@ -55,7 +55,7 @@ public struct Callback {
         onUpdateBattery: @escaping (Battery?) -> Void,
         onUpdateANCMode: @escaping (ANCMode?) -> Void,
         onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
-        onUpdateEnhancedBass: @escaping (EnhancedBassSettings?) -> Void,
+        onUpdateEnhancedBass: @escaping (EnhancedBass?) -> Void,
         onUpdateEQPreset: @escaping (EQPreset?) -> Void,
         onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
         onUpdateRingBuds: @escaping (RingBuds) -> Void,
@@ -85,7 +85,7 @@ public final class Device: NSObject {
 
     public private(set) var battery: Battery?
     public private(set) var ancMode: ANCMode?
-    public private(set) var enhancedBass: EnhancedBassSettings?
+    public private(set) var enhancedBass: EnhancedBass?
     public private(set) var eqPreset: EQPreset?
     public private(set) var spatialAudio: SpatialAudioMode?
     public private(set) var ringBuds: RingBuds?
@@ -229,7 +229,7 @@ extension Device {
         )
     }
 
-    public func setEnhancedBass(_ settings: EnhancedBassSettings) {
+    public func setEnhancedBass(_ settings: EnhancedBass) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -268,14 +268,6 @@ extension Device {
     public func setInEarDetection(_ isEnabled: Bool) {
         guard isConnected else {
             callback.onError(.connectionFailed)
-            return
-        }
-
-        guard
-            let deviceInfo,
-            deviceInfo.model.supportsInEarDetection
-        else {
-            callback.onError(.unsupportedOperation)
             return
         }
 
@@ -524,13 +516,6 @@ extension Device {
     }
 
     private func sendReadInEarRequest() {
-        guard
-            let deviceInfo = deviceInfo,
-            deviceInfo.model.supportsInEarDetection
-        else {
-            return
-        }
-
         Logger.bluetooth.debug("👂 Sending in-ear detection request")
 
         let request = BluetoothRequest(
@@ -723,9 +708,7 @@ extension Device {
                 }
 
             case BluetoothCommand.Response.inEarDetection:
-                if let deviceInfo,
-                   deviceInfo.model.supportsInEarDetection,
-                   let inEarDetection = response.parseInEarDetection() {
+                if let inEarDetection = response.parseInEarDetection() {
                     updateDeviceSettings { settings in
                         settings.inEarDetection = inEarDetection
                     }

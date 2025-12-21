@@ -10,9 +10,34 @@ extension SpatialAudioMode {
 
     public var displayName: String {
         switch self {
-            case .off: return "Off"
-            case .fixed: return "Fixed"
-            case .headTracking: return "Head-tracking"
+            case .off: "Off"
+            case .fixed: "Fixed"
+            case .headTracking: "Head-tracking"
+        }
+    }
+}
+
+extension SpatialAudioMode: DeviceCapability {
+
+    public static func isSupported(by model: DeviceModel) -> Bool {
+        switch model {
+            case .ear1,
+                 .ear2,
+                 .ear3,
+                 .headphone1,
+                 .cmfBudsPro,
+                 .cmfBuds2,
+                 .cmfBudsPro2,
+                 .cmfNeckbandPro,
+                 .cmfHeadphonePro:
+                true
+
+            case .earStick,
+                .earOpen,
+                .ear,
+                .earA,
+                .cmfBuds:
+                false
         }
     }
 

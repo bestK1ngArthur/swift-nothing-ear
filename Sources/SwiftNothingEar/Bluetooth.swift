@@ -204,7 +204,7 @@ extension BluetoothRequest {
     }
 
     static func setEnhancedBass(
-        _ settings: EnhancedBassSettings,
+        _ settings: EnhancedBass,
         operationID: UInt8
     ) -> Self {
         let payload: [UInt8] = [
@@ -511,7 +511,7 @@ extension BluetoothResponse {
         return payload[0] == 1
     }
 
-    func parseEnhancedBassSettings() -> EnhancedBassSettings? {
+    func parseEnhancedBassSettings() -> EnhancedBass? {
         guard payload.count >= 2 else {
             return nil
         }

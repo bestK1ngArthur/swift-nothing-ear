@@ -40,3 +40,28 @@ extension ANCMode.NoiseCancellation {
         }
     }
 }
+
+extension ANCMode: DeviceCapability {
+
+    public static func isSupported(by model: DeviceModel) -> Bool {
+        switch model {
+            case .ear1,
+                 .ear2,
+                 .ear3,
+                 .ear,
+                 .earA,
+                 .headphone1,
+                 .cmfBuds,
+                 .cmfBudsPro,
+                 .cmfBuds2,
+                 .cmfBudsPro2,
+                 .cmfNeckbandPro,
+                 .cmfHeadphonePro:
+                true
+
+            case .earStick,
+                .earOpen:
+                false
+        }
+    }
+}

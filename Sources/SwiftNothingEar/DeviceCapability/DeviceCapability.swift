@@ -1,6 +1,6 @@
 import Foundation
 
-protocol DeviceCapability {
-        
-    func isSupported(by model: DeviceModel) -> Bool
+public protocol DeviceCapability {
+
+    static func isSupported(by model: DeviceModel) -> Bool
 }

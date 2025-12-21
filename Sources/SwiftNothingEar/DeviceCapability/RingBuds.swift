@@ -16,3 +16,10 @@ public struct RingBuds: Sendable {
         self.bud = bud
     }
 }
+
+extension RingBuds: DeviceCapability {
+
+    public static func isSupported(by model: DeviceModel) -> Bool {
+        true
+    }
+}

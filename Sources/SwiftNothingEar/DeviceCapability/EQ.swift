@@ -29,6 +29,35 @@ extension EQPreset {
     }
 }
 
+extension EQPreset: DeviceCapability {
+
+    public static func isSupported(by model: DeviceModel) -> Bool {
+        true
+    }
+
+    public static func allSupported(by model: DeviceModel) -> [Self] {
+        switch model {
+            case .ear1,
+                 .ear2,
+                 .ear3,
+                 .earStick,
+                 .earOpen,
+                 .ear,
+                 .earA,
+                 .headphone1,
+                 .cmfBuds,
+                 .cmfBuds2,
+                 .cmfBudsPro,
+                 .cmfBudsPro2, // TODO: Add genre presets
+                 .cmfHeadphonePro:
+                [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
+
+            case .cmfNeckbandPro:
+                [.balanced, .voice, .moreTreble, .moreBass, .custom]
+        }
+    }
+}
+
 // MARK: Listening Mode
 
 extension DeviceModel {
