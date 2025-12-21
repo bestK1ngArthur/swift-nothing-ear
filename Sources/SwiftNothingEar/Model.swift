@@ -14,6 +14,7 @@ extension NothingEar {
         case headphone1(Headphone1)           // Nothing Headphone (1)
         case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
         case cmfBuds(CMFBuds)                 // CMF Buds
+        case cmfBuds2(CMFBuds2)               // CMF Buds 2
         case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
         case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
         case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
@@ -65,6 +66,12 @@ extension NothingEar.Model {
         case white
     }
 
+    public enum CMFBuds2: Sendable {
+        case lightGreen
+        case orange
+        case darkGrey
+    }
+
     public enum CMFBudsPro2: Sendable {
         case black
         case blue
@@ -96,6 +103,7 @@ extension NothingEar.Model {
             case .headphone1: return "Nothing Headphone (1)"
             case .cmfBudsPro: return "CMF Buds Pro"
             case .cmfBuds: return "CMF Buds"
+            case .cmfBuds2: return "CMF Buds 2"
             case .cmfBudsPro2: return "CMF Buds Pro 2"
             case .cmfNeckbandPro: return "CMF Neckband Pro"
             case .cmfHeadphonePro: return "CMF Headphone Pro"
@@ -114,6 +122,7 @@ extension NothingEar.Model {
             case .headphone1: "B170"
             case .cmfBudsPro: "B163"
             case .cmfBuds: "B168"
+            case .cmfBuds2: "B188"
             case .cmfBudsPro2: "B172"
             case .cmfNeckbandPro: "B164"
             case .cmfHeadphonePro: "B175"
@@ -148,7 +157,7 @@ extension NothingEar.Model {
 
     public var supportsEnhancedBass: Bool {
         switch self {
-            case .ear, .cmfBudsPro2, .cmfBuds, .earA, .headphone1, .cmfHeadphonePro:
+            case .ear, .cmfBudsPro2, .cmfBuds, .cmfBuds2, .earA, .headphone1, .cmfHeadphonePro:
                 return true
             default:
                 return false
@@ -191,6 +200,7 @@ extension NothingEar.Model {
             case "Nothing Headphone (1)": .headphone1(.black)
             case "CMF Buds Pro": .cmfBudsPro(.black)
             case "CMF Buds": .cmfBuds(.black)
+            case "CMF Buds 2": .cmfBuds2(.darkGrey)
             case "CMF Buds Pro 2": .cmfBudsPro2(.black)
             case "CMF Neckband Pro": .cmfNeckbandPro(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
@@ -301,6 +311,8 @@ extension NothingEar.Model {
                 .cmfBuds(.white)
             case "58", "59":
                 .cmfBuds(.orange)
+            case "99":
+                .cmfBuds2(.darkGrey)
             case "61", "69", "74":
                 .ear(.black)
             case "62", "70", "75":
@@ -349,6 +361,7 @@ extension NothingEar.Model {
             case (.headphone1, .headphone1): true
             case (.cmfBudsPro, .cmfBudsPro): true
             case (.cmfBuds, .cmfBuds): true
+            case (.cmfBuds2, .cmfBuds2): true
             case (.cmfBudsPro2, .cmfBudsPro2): true
             case (.cmfNeckbandPro, .cmfNeckbandPro): true
             case (.cmfHeadphonePro, .cmfHeadphonePro): true

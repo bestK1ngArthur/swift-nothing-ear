@@ -507,6 +507,8 @@ extension NothingEar.Device {
             true
         } else if case .cmfBuds = deviceInfo?.model {
             true
+        } else if case .cmfBuds2 = deviceInfo?.model {
+            true
         } else {
             false
         }

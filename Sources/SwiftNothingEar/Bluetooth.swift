@@ -420,36 +420,76 @@ extension NothingEar.BluetoothResponse {
     }
 
     func parseSerialNumber() -> String? {
-        guard payload.count >= 7 else {
-            return nil
-        }
-
-        // Skip first byte (E) and next 6 bytes (s02)
-        let configData = Array(payload[7...])
-
-        guard let configText = String(bytes: configData, encoding: .utf8) else {
-            return nil
-        }
-
-        // Split by lines and parse configurations
-        let lines = configText.components(separatedBy: "\n")
-
-        for line in lines {
-            let parts = line.components(separatedBy: ",")
-
-            guard
-                parts.count == 3,
-                let _ = Int(parts[0]),
-                let type = Int(parts[1])
-            else {
-                continue
+        func extractSerial(from bytes: [UInt8]) -> String? {
+            guard let configText = String(bytes: bytes, encoding: .utf8) else {
+                return nil
             }
 
-            let value = parts[2]
+            let lines = configText.components(separatedBy: .newlines)
 
-            // Look for type 4 (serial number) with non-empty value
-            if type == 4 && !value.isEmpty {
-                return value
+            for line in lines {
+                let parts = line.split(
+                    separator: ",",
+                    maxSplits: 2,
+                    omittingEmptySubsequences: false
+                )
+
+                guard parts.count == 3 else {
+                    continue
+                }
+
+                let indexPart = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                let typePart = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                let valuePart = parts[2].trimmingCharacters(in: .whitespacesAndNewlines)
+
+                guard
+                    !valuePart.isEmpty,
+                    Int(indexPart) != nil,
+                    let type = Int(typePart)
+                else {
+                    continue
+                }
+
+                if type == 4 {
+                    return valuePart
+                }
+            }
+
+            return nil
+        }
+
+        func sanitizePayload(_ bytes: [UInt8]) -> [UInt8] {
+            let trimmedLeading = Array(
+                bytes.drop(while: { byte in
+                    byte < 0x20 && byte != 0x0A && byte != 0x0D
+                })
+            )
+
+            guard !trimmedLeading.isEmpty else {
+                return []
+            }
+
+            return trimmedLeading.filter { byte in
+                (byte >= 0x20 && byte < 0x80) || byte == 0x0A || byte == 0x0D
+            }
+        }
+
+        // Try payload variations to support older and newer formats.
+        let baseCandidates: [[UInt8]] = [
+            payload,
+            payload.count > 7 ? Array(payload[7...]) : []
+        ].filter { !$0.isEmpty }
+
+        for base in baseCandidates {
+            let variations = [
+                sanitizePayload(base),
+                base
+            ].filter { !$0.isEmpty }
+
+            for candidate in variations {
+                if let serial = extractSerial(from: candidate) {
+                    return serial
+                }
             }
         }
 

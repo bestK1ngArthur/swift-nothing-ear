@@ -22,6 +22,7 @@ final class NothingEarTests: XCTestCase {
         // Test Enhanced Bass support
         XCTAssertTrue(NothingEar.Model.ear(.white).supportsEnhancedBass)
         XCTAssertTrue(NothingEar.Model.cmfBudsPro2(.white).supportsEnhancedBass)
+        XCTAssertTrue(NothingEar.Model.cmfBuds2(.darkGrey).supportsEnhancedBass)
         XCTAssertFalse(NothingEar.Model.ear1(.white).supportsEnhancedBass)
         XCTAssertFalse(NothingEar.Model.ear2(.white).supportsEnhancedBass)
         XCTAssertFalse(NothingEar.Model.ear3(.white).supportsEnhancedBass)
@@ -31,12 +32,13 @@ final class NothingEarTests: XCTestCase {
         XCTAssertEqual(NothingEar.Model.ear2(.white).displayName, "Nothing Ear (2)")
         XCTAssertEqual(NothingEar.Model.ear3(.white).displayName, "Nothing Ear (3)")
         XCTAssertEqual(NothingEar.Model.cmfBudsPro(.white).displayName, "CMF Buds Pro")
+        XCTAssertEqual(NothingEar.Model.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
     }
 
     func testEar3SerialNumberDetection() {
         // Test real serial number for white ear3
         let whiteEar3Serial = "SH10252535010003"
-        let detectedModel = NothingEar.Model.getModel(fromSerialNumber: whiteEar3Serial)
+        let detectedModel = NothingEar.Model.getModel(from: whiteEar3Serial)
 
         XCTAssertNotNil(detectedModel)
         if case .ear3(let color) = detectedModel {
@@ -47,7 +49,7 @@ final class NothingEarTests: XCTestCase {
 
         // Test hypothetical black ear3 serial
         let blackEar3Serial = "SH10262635010003"
-        let detectedBlackModel = NothingEar.Model.getModel(fromSerialNumber: blackEar3Serial)
+        let detectedBlackModel = NothingEar.Model.getModel(from: blackEar3Serial)
 
         XCTAssertNotNil(detectedBlackModel)
         if case .ear3(let color) = detectedBlackModel {
@@ -166,6 +168,58 @@ final class NothingEarTests: XCTestCase {
         let bass3 = NothingEar.EnhancedBassSettings(isEnabled: true, level: 0)
         XCTAssertTrue(bass3.isEnabled)
         XCTAssertEqual(bass3.level, 0)
+    }
+
+    func testSerialNumberParsingHandlesLegacyAndNewPayloads() {
+        let expectedCMFSerial = "123456789"
+
+        let cmfBasePayload: [UInt8] = [
+            0x06, 0x32, 0x2C, 0x32, 0x2C, 0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E, 0x35, 0x30, 0x0A, 0x0A,
+            0x32, 0x2C, 0x34, 0x2C, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0A, 0x32,
+            0x2C, 0x36, 0x2C, 0x31, 0x45, 0x42, 0x34, 0x45, 0x33, 0x45, 0x44, 0x42, 0x30, 0x33, 0x43,
+            0x0A, 0x33, 0x2C, 0x32, 0x2C, 0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E, 0x35, 0x30, 0x0A, 0x0A,
+            0x33, 0x2C, 0x34, 0x2C, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x0A, 0x32,
+            0x2C, 0x36, 0x2C, 0x31, 0x45, 0x42, 0x34, 0x45, 0x33, 0x45, 0x44, 0x42, 0x30, 0x33, 0x43,
+            0x0A
+        ]
+        let cmfPayloadWithCRCA: [UInt8] = cmfBasePayload + [0x19, 0xE1]
+        let cmfPayloadWithCRCB: [UInt8] = cmfBasePayload + [0xEF, 0xA4]
+
+        func makeResponse(payload: [UInt8]) -> NothingEar.BluetoothResponse? {
+            let command = NothingEar.BluetoothCommand.Response.serialNumber
+            let data: [UInt8] = [
+                0x55, 0x60, 0x01,
+                UInt8(command & 0xFF),
+                UInt8(command >> 8),
+                UInt8(payload.count),
+                0x00,
+                0x01
+            ] + payload
+
+            return NothingEar.BluetoothResponse(data: data)
+        }
+
+        guard
+            let baseResponse = makeResponse(payload: cmfBasePayload),
+            let crcAResponse = makeResponse(payload: cmfPayloadWithCRCA),
+            let crcBResponse = makeResponse(payload: cmfPayloadWithCRCB)
+        else {
+            XCTFail("Failed to build CMF serial number responses")
+            return
+        }
+
+        XCTAssertEqual(baseResponse.parseSerialNumber(), expectedCMFSerial)
+        XCTAssertEqual(crcAResponse.parseSerialNumber(), expectedCMFSerial)
+        XCTAssertEqual(crcBResponse.parseSerialNumber(), expectedCMFSerial)
+
+        let legacySerial = "LEGACY123456"
+        let legacyNoise: [UInt8] = [0x01, 0x02, 0x00, 0x04, 0x05, 0x1F, 0x07]
+        let legacyPayload = legacyNoise + Array("0,4,\(legacySerial)\n".utf8)
+        guard let legacyResponse = makeResponse(payload: legacyPayload) else {
+            XCTFail("Failed to build legacy serial number response")
+            return
+        }
+        XCTAssertEqual(legacyResponse.parseSerialNumber(), legacySerial)
     }
 
     // MARK: - Protocol Tests
