@@ -503,15 +503,7 @@ extension NothingEar.Device {
     private func sendReadEQRequest() {
         NothingEar.Logger.bluetooth.debug("🎵 Sending read EQ request")
 
-        let isListeningModeSupported = if case .cmfBudsPro2 = deviceInfo?.model {
-            true
-        } else if case .cmfBuds = deviceInfo?.model {
-            true
-        } else if case .cmfBuds2 = deviceInfo?.model {
-            true
-        } else {
-            false
-        }
+        let isListeningModeSupported = deviceInfo?.model.isListeningModeSupported ?? false
         let command = isListeningModeSupported
             ? NothingEar.BluetoothCommand.RequestRead.listeningMode
             : NothingEar.BluetoothCommand.RequestRead.eq

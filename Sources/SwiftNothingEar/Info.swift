@@ -3,6 +3,7 @@ import Foundation
 extension NothingEar {
 
     public struct DeviceInfo: Sendable {
+
         public var model: Model
         public var serialNumber: String
         public var bluetoothAddress: String?
@@ -17,6 +18,7 @@ extension NothingEar {
     }
 
     public struct DeviceSettings: Sendable {
+
         public var inEarDetection: Bool
         public var lowLatency: Bool
         public var personalizedANC: Bool
@@ -25,6 +27,7 @@ extension NothingEar {
     }
 
     public struct BatteryLevel: Sendable {
+
         public let level: Int // 0-100
         public let isCharging: Bool
         public let isConnected: Bool
@@ -38,6 +41,7 @@ extension NothingEar {
     }
 
     public enum ANCMode: CaseIterable, Hashable, Sendable {
+
         public enum NoiseCancellation: CaseIterable, Sendable {
             case low
             case mid
@@ -76,6 +80,7 @@ extension NothingEar {
     }
 
     public struct EnhancedBassSettings: Sendable {
+
         public let isEnabled: Bool
         public let level: Int // 0-100
 
@@ -177,6 +182,20 @@ extension NothingEar.EQPreset {
             case .moreBass: return "More Bass"
             case .custom: return "Custom"
             case .advanced: return "Advanced"
+        }
+    }
+}
+
+// MARK: Listening Mode
+
+extension NothingEar.Model {
+
+    var isListeningModeSupported: Bool {
+        switch self {
+            case .cmfBuds, .cmfBuds2, .cmfBudsPro2:
+                return true
+            default:
+                return false
         }
     }
 }
