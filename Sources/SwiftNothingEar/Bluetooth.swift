@@ -192,7 +192,7 @@ extension BluetoothRequest {
 extension BluetoothRequest {
 
     static func setANCMode(
-        _ mode: ANCMode,
+        _ mode: NoiseCancellationMode,
         operationID: UInt8
     ) -> Self {
         let payload: [UInt8] = [0x01, mode.rawValue8, 0x00]
@@ -363,7 +363,7 @@ extension BluetoothResponse {
         }
     }
 
-    func parseANCMode() -> ANCMode? {
+    func parseANCMode() -> NoiseCancellationMode? {
         guard payload.count >= 2 else {
             return nil
         }
@@ -562,16 +562,16 @@ extension BluetoothResponse {
 
 // MARK: Active Noise Cancellation Mode - Bytes
 
-extension ANCMode {
+extension NoiseCancellationMode {
 
     var rawValue8: UInt8 {
         switch self {
             case .off: return 0x05
             case .transparent: return 0x07
-            case .noiseCancellation(.low): return 0x03
-            case .noiseCancellation(.mid): return 0x02
-            case .noiseCancellation(.high): return 0x01
-            case .noiseCancellation(.adaptive): return 0x04
+            case .active(.low): return 0x03
+            case .active(.mid): return 0x02
+            case .active(.high): return 0x01
+            case .active(.adaptive): return 0x04
         }
     }
 
@@ -579,10 +579,10 @@ extension ANCMode {
         switch value {
             case 0x05: return .off
             case 0x07: return .transparent
-            case 0x01: return .noiseCancellation(.high)
-            case 0x02: return .noiseCancellation(.mid)
-            case 0x03: return .noiseCancellation(.low)
-            case 0x04: return .noiseCancellation(.adaptive)
+            case 0x01: return .active(.high)
+            case 0x02: return .active(.mid)
+            case 0x03: return .active(.low)
+            case 0x04: return .active(.adaptive)
             default: return nil
         }
     }

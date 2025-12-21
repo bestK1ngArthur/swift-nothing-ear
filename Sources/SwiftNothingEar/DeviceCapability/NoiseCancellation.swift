@@ -1,8 +1,8 @@
 import Foundation
 
-public enum ANCMode: CaseIterable, Hashable, Sendable {
+public enum NoiseCancellationMode: CaseIterable, Hashable, Sendable {
 
-    public enum NoiseCancellation: CaseIterable, Sendable {
+    public enum Active: CaseIterable, Sendable {
         case low
         case mid
         case high
@@ -11,25 +11,25 @@ public enum ANCMode: CaseIterable, Hashable, Sendable {
 
     case off
     case transparent
-    case noiseCancellation(NoiseCancellation)
+    case active(Active)
 
-    public static var allCases: [ANCMode] {
-        [.noiseCancellation(.adaptive), .transparent, .off]
+    public static var allCases: [NoiseCancellationMode] {
+        [.active(.adaptive), .transparent, .off]
     }
 }
 
-extension ANCMode {
+extension NoiseCancellationMode {
 
     public var displayName: String {
         switch self {
             case .off: return "Off"
             case .transparent: return "Transparency"
-            case .noiseCancellation: return "Noise Cancellation"
+            case .active: return "Active"
         }
     }
 }
 
-extension ANCMode.NoiseCancellation {
+extension NoiseCancellationMode.Active {
 
     public var displayName: String {
         switch self {
@@ -41,7 +41,7 @@ extension ANCMode.NoiseCancellation {
     }
 }
 
-extension ANCMode: DeviceCapability {
+extension NoiseCancellationMode: DeviceCapability {
 
     public static func isSupported(by model: DeviceModel) -> Bool {
         switch model {
@@ -60,7 +60,7 @@ extension ANCMode: DeviceCapability {
                 true
 
             case .earStick,
-                .earOpen:
+                 .earOpen:
                 false
         }
     }

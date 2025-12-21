@@ -39,7 +39,7 @@ public struct Callback {
     let onDisconnect: (Result<Void, Error>) -> Void
 
     let onUpdateBattery: (Battery?) -> Void
-    let onUpdateANCMode: (ANCMode?) -> Void
+    let onUpdateNoiseCancellation: (NoiseCancellationMode?) -> Void
     let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
     let onUpdateEnhancedBass: (EnhancedBass?) -> Void
     let onUpdateEQPreset: (EQPreset?) -> Void
@@ -53,7 +53,7 @@ public struct Callback {
         onConnect: @escaping (Result<DeviceInfo, Error>) -> Void,
         onDisconnect: @escaping (Result<Void, Error>) -> Void,
         onUpdateBattery: @escaping (Battery?) -> Void,
-        onUpdateANCMode: @escaping (ANCMode?) -> Void,
+        onUpdateANCMode: @escaping (NoiseCancellationMode?) -> Void,
         onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
         onUpdateEnhancedBass: @escaping (EnhancedBass?) -> Void,
         onUpdateEQPreset: @escaping (EQPreset?) -> Void,
@@ -65,7 +65,7 @@ public struct Callback {
         self.onConnect = onConnect
         self.onDisconnect = onDisconnect
         self.onUpdateBattery = onUpdateBattery
-        self.onUpdateANCMode = onUpdateANCMode
+        self.onUpdateNoiseCancellation = onUpdateANCMode
         self.onUpdateSpatialAudio = onUpdateSpatialAudio
         self.onUpdateEnhancedBass = onUpdateEnhancedBass
         self.onUpdateEQPreset = onUpdateEQPreset
@@ -84,7 +84,7 @@ public final class Device: NSObject {
     public private(set) var deviceSettings: DeviceSettings?
 
     public private(set) var battery: Battery?
-    public private(set) var ancMode: ANCMode?
+    public private(set) var ancMode: NoiseCancellationMode?
     public private(set) var enhancedBass: EnhancedBass?
     public private(set) var eqPreset: EQPreset?
     public private(set) var spatialAudio: SpatialAudioMode?
@@ -207,7 +207,7 @@ extension Device {
         centralManager.cancelPeripheralConnection(connectedPeripheral)
     }
 
-    public func setANCMode(_ mode: ANCMode) {
+    public func setNoiseCancellationMode(_ mode: NoiseCancellationMode) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -215,7 +215,7 @@ extension Device {
 
         guard
             let deviceInfo,
-            deviceInfo.model.supportsANC
+            deviceInfo.model.supportsNoiseCancellation
         else {
             callback.onError(.unsupportedOperation)
             return
@@ -474,7 +474,7 @@ extension Device {
     private func sendReadANCRequest() {
         guard
             let deviceInfo = deviceInfo,
-            deviceInfo.model.supportsANC
+            deviceInfo.model.supportsNoiseCancellation
         else {
             return
         }
@@ -682,7 +682,7 @@ extension Device {
                 BluetoothCommand.Response.ancB:
                 if let ancMode = response.parseANCMode() {
                     self.ancMode = ancMode
-                    callback.onUpdateANCMode(ancMode)
+                    callback.onUpdateNoiseCancellation(ancMode)
                     Logger.parsing.info("🔇 Parsed ANC mode: \(String(describing: ancMode), privacy: .public)")
                 } else {
                     Logger.parsing.warning("🔇 Failed to parse ANC mode")

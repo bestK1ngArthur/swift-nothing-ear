@@ -126,8 +126,8 @@ extension DeviceModel {
         }
     }
 
-    public var supportsANC: Bool {
-        ANCMode.isSupported(by: self)
+    public var supportsNoiseCancellation: Bool {
+        NoiseCancellationMode.isSupported(by: self)
     }
 
     public var supportsSpatialAudio: Bool {
