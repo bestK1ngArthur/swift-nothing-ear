@@ -168,6 +168,30 @@ extension NothingEar.SpatialAudioMode {
             case .headTracking: return "Head-tracking"
         }
     }
+
+    public static func allSupported(by model: NothingEar.Model) -> [Self] {
+        switch model {
+            case .headphone1:
+                [.off, .fixed, .headTracking]
+
+            case .ear1,
+                 .ear2,
+                 .ear3,
+                 .cmfBudsPro,
+                 .cmfBuds2,
+                 .cmfBudsPro2,
+                 .cmfNeckbandPro,
+                 .cmfHeadphonePro: // TODO: Add concert/cinema mode
+                [.off, .fixed]
+
+            case .earStick,
+                .earOpen,
+                .ear,
+                .earA,
+                .cmfBuds:
+                []
+        }
+    }
 }
 
 // MARK: Equalizer Preset
