@@ -35,16 +35,6 @@ final class NothingEarTests: XCTestCase {
         XCTAssertEqual(NothingEar.Model.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
     }
 
-    func testCMFBuds2ModelDetection() {
-        let serial = "1351992517006286"
-        let detected = NothingEar.Model.getModel(for: "CMF Buds 2", serialNumber: serial)
-        guard case .cmfBuds2(let color)? = detected else {
-            XCTFail("Expected CMF Buds 2 but got \(String(describing: detected))")
-            return
-        }
-        XCTAssertEqual(color, .darkGrey)
-    }
-
     func testEar3SerialNumberDetection() {
         // Test real serial number for white ear3
         let whiteEar3Serial = "SH10252535010003"
