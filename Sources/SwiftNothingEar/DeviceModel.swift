@@ -126,6 +126,25 @@ extension DeviceModel {
         }
     }
 
+    public var isCMF: Bool {
+        switch self {
+            case .cmfBudsPro,
+                  .cmfBuds,
+                  .cmfBuds2,
+                  .cmfBudsPro2,
+                  .cmfNeckbandPro,
+                  .cmfHeadphonePro:
+                return true
+            default:
+                return false
+        }
+    }
+}
+
+// MARK: Capabilities
+
+extension DeviceModel {
+
     public var supportsNoiseCancellation: Bool {
         NoiseCancellationMode.isSupported(by: self)
     }
