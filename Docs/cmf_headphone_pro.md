@@ -16,7 +16,7 @@
 | **Active Noise Cancellation** | 🟢 | Read and change mode |
 | **Spatial Audio** | 🟢 | Read and change mode |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
-| **Equalizer Presets** | 🟡 | Read and set all EQ presets without custom/advanced settings |
+| **Equalizer Presets** | 🟡 | Read and set default EQ presets without genre presets |
 | **Gesture Controls** | 🔴 | Not supported yet |
 | **In-Ear Detection** | 🟢 | Read and set |
 | **Personalized ANC** | 🟢 | Read and set |
