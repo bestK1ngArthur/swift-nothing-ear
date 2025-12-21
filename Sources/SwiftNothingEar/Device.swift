@@ -646,7 +646,7 @@ extension Device {
             case BluetoothCommand.Response.serialNumber:
                 let deviceName = connectedPeripheral?.name ?? "Unknown"
                 if let serialNumber = response.parseSerialNumber(),
-                   let detectedModel = Model.getModel(for: deviceName, serialNumber: serialNumber) {
+                   let detectedModel = DeviceModel.getModel(for: deviceName, serialNumber: serialNumber) {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber

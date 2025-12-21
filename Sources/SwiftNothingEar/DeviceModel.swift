@@ -1,7 +1,7 @@
 import Foundation
 
 /// Supported Nothing Ear device models
-public enum Model: Sendable {
+public enum DeviceModel: Sendable {
     case ear1(Ear1)                       // Nothing Ear (1)
     case ear2(Ear2)                       // Nothing Ear (2)
     case ear3(Ear3)                       // Nothing Ear (3)
@@ -18,7 +18,7 @@ public enum Model: Sendable {
     case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
 }
 
-extension Model {
+extension DeviceModel {
 
     public enum Ear1: Sendable {
         case black
@@ -182,7 +182,7 @@ extension Model {
 
 // MARK: Model Detection
 
-extension Model {
+extension DeviceModel {
 
     static func getModel(for deviceName: String, serialNumber: String) -> Self? {
         // Try to detect model by name without color
@@ -344,7 +344,7 @@ extension Model {
     }
 }
 
-extension Model {
+extension DeviceModel {
 
     static func isBaseEqual(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {

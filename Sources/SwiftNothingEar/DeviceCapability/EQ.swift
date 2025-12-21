@@ -31,7 +31,7 @@ extension EQPreset {
 
 // MARK: Listening Mode
 
-extension Model {
+extension DeviceModel {
 
     var isListeningModeSupported: Bool {
         switch self {

@@ -16,7 +16,7 @@ extension SpatialAudioMode {
         }
     }
 
-    public static func allSupported(by model: Model) -> [Self] {
+    public static func allSupported(by model: DeviceModel) -> [Self] {
         switch model {
             case .headphone1:
                 [.off, .fixed, .headTracking]

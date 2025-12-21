@@ -2,7 +2,7 @@ import Foundation
 
 public struct DeviceInfo: Sendable {
 
-    public var model: Model
+    public var model: DeviceModel
     public var serialNumber: String
     public var bluetoothAddress: String?
     public var firmwareVersion: String?

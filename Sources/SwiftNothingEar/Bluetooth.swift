@@ -307,7 +307,7 @@ extension BluetoothRequest {
 
 extension BluetoothResponse {
 
-    func parseBattery(model: Model) -> Battery? {
+    func parseBattery(model: DeviceModel) -> Battery? {
         guard payload.count >= 1 else {
             return nil
         }
