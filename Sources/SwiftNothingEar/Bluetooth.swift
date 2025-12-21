@@ -1,165 +1,162 @@
 import Foundation
 @preconcurrency import CoreBluetooth
 
-extension NothingEar {
+enum BluetoothCommand {
 
-    enum BluetoothCommand {
-
-        enum RequestRead {
-            static let advancedEQ: UInt16      = 49228 // 0xC04C
-            static let anc: UInt16             = 49182 // 0xC01E
-            static let battery: UInt16         = 49159 // 0xC007
-            static let customEQ: UInt16        = 49220 // 0xC044
-            static let enhancedBass: UInt16    = 49230 // 0xC04E
-            static let eq: UInt16              = 49183 // 0xC01F
-            static let firmware: UInt16        = 49218 // 0xC042
-            static let gesture: UInt16         = 49176 // 0xC018
-            static let inEarDetection: UInt16  = 49166 // 0xC00E
-            static let lowLatency: UInt16      = 49217 // 0xC041
-            static let ledCaseColor: UInt16    = 49175 // 0xC017
-            static let listeningMode: UInt16   = 49232 // 0xC050
-            static let personalizedANC: UInt16 = 49184 // 0xC020
-            static let serialNumber: UInt16    = 49158 // 0xC006
-            static let spatialAudio: UInt16    = 49231 // 0xC04F
-            static let ringBuds: UInt16        = 49154 // 0xC002
-        }
-
-        enum RequestWrite {
-            static let advancedEQ: UInt16      = 61519 // 0xF06F
-            static let anc: UInt16             = 61455 // 0xF00F
-            static let customEQ: UInt16        = 61505 // 0xF061
-            static let earFitTest: UInt16      = 61460 // 0xF014
-            static let enhancedBass: UInt16    = 61521 // 0xF071
-            static let eq: UInt16              = 61456 // 0xF010
-            static let gesture: UInt16         = 61443 // 0xF003
-            static let inEarDetection: UInt16  = 61444 // 0xF004
-            static let lowLatency: UInt16      = 61504 // 0xF060
-            static let ledCaseColor: UInt16    = 61453 // 0xF00D
-            static let listeningMode: UInt16   = 61469 // 0xF01D
-            static let personalizedANC: UInt16 = 61457 // 0xF011
-            static let ringBuds: UInt16        = 61442 // 0xF002
-            static let spatialAudio: UInt16    = 61522 // 0xF052
-        }
-
-        enum Response {
-            static let advancedEQ: UInt16      = 16460 // 0x404C
-            static let ancA: UInt16            = 57347 // 0xE003
-            static let ancB: UInt16            = 16414 // 0x401E
-            static let batteryA: UInt16        = 57345 // 0xE001
-            static let batteryB: UInt16        = 16391 // 0x4007
-            static let customEQ: UInt16        = 16452 // 0x4044
-            static let earFitTest: UInt16      = 57357 // 0xE00D
-            static let enhancedBass: UInt16    = 16462 // 0x404E
-            static let eqA: UInt16             = 16415 // 0x401F
-            static let eqB: UInt16             = 16464 // 0x4040
-            static let firmware: UInt16        = 16450 // 0x4042
-            static let gesture: UInt16         = 16408 // 0x4018
-            static let inEarDetection: UInt16  = 16398 // 0x400E
-            static let lowLatency: UInt16      = 16449 // 0x4041
-            static let ledCaseColor: UInt16    = 16407 // 0x4017
-            static let personalizedANC: UInt16 = 16416 // 0x4020
-            static let serialNumber: UInt16    = 16390 // 0x4006
-            static let spatialAudio: UInt16    = 16463 // 0x404F
-            static let ringBuds: UInt16        = 16386 // 0x4002
-        }
+    enum RequestRead {
+        static let advancedEQ: UInt16      = 49228 // 0xC04C
+        static let anc: UInt16             = 49182 // 0xC01E
+        static let battery: UInt16         = 49159 // 0xC007
+        static let customEQ: UInt16        = 49220 // 0xC044
+        static let enhancedBass: UInt16    = 49230 // 0xC04E
+        static let eq: UInt16              = 49183 // 0xC01F
+        static let firmware: UInt16        = 49218 // 0xC042
+        static let gesture: UInt16         = 49176 // 0xC018
+        static let inEarDetection: UInt16  = 49166 // 0xC00E
+        static let lowLatency: UInt16      = 49217 // 0xC041
+        static let ledCaseColor: UInt16    = 49175 // 0xC017
+        static let listeningMode: UInt16   = 49232 // 0xC050
+        static let personalizedANC: UInt16 = 49184 // 0xC020
+        static let serialNumber: UInt16    = 49158 // 0xC006
+        static let spatialAudio: UInt16    = 49231 // 0xC04F
+        static let ringBuds: UInt16        = 49154 // 0xC002
     }
 
-    struct BluetoothRequest {
-
-        let command: UInt16
-        let payload: [UInt8]
-        let operationID: UInt8
-
-        static let headerPrefix: [UInt8] = [0x55, 0x60, 0x01]
-        static let headerSize = 8
+    enum RequestWrite {
+        static let advancedEQ: UInt16      = 61519 // 0xF06F
+        static let anc: UInt16             = 61455 // 0xF00F
+        static let customEQ: UInt16        = 61505 // 0xF061
+        static let earFitTest: UInt16      = 61460 // 0xF014
+        static let enhancedBass: UInt16    = 61521 // 0xF071
+        static let eq: UInt16              = 61456 // 0xF010
+        static let gesture: UInt16         = 61443 // 0xF003
+        static let inEarDetection: UInt16  = 61444 // 0xF004
+        static let lowLatency: UInt16      = 61504 // 0xF060
+        static let ledCaseColor: UInt16    = 61453 // 0xF00D
+        static let listeningMode: UInt16   = 61469 // 0xF01D
+        static let personalizedANC: UInt16 = 61457 // 0xF011
+        static let ringBuds: UInt16        = 61442 // 0xF002
+        static let spatialAudio: UInt16    = 61522 // 0xF052
     }
 
-    struct BluetoothResponse {
+    enum Response {
+        static let advancedEQ: UInt16      = 16460 // 0x404C
+        static let ancA: UInt16            = 57347 // 0xE003
+        static let ancB: UInt16            = 16414 // 0x401E
+        static let batteryA: UInt16        = 57345 // 0xE001
+        static let batteryB: UInt16        = 16391 // 0x4007
+        static let customEQ: UInt16        = 16452 // 0x4044
+        static let earFitTest: UInt16      = 57357 // 0xE00D
+        static let enhancedBass: UInt16    = 16462 // 0x404E
+        static let eqA: UInt16             = 16415 // 0x401F
+        static let eqB: UInt16             = 16464 // 0x4040
+        static let firmware: UInt16        = 16450 // 0x4042
+        static let gesture: UInt16         = 16408 // 0x4018
+        static let inEarDetection: UInt16  = 16398 // 0x400E
+        static let lowLatency: UInt16      = 16449 // 0x4041
+        static let ledCaseColor: UInt16    = 16407 // 0x4017
+        static let personalizedANC: UInt16 = 16416 // 0x4020
+        static let serialNumber: UInt16    = 16390 // 0x4006
+        static let spatialAudio: UInt16    = 16463 // 0x404F
+        static let ringBuds: UInt16        = 16386 // 0x4002
+    }
+}
 
-        let command: UInt16
-        let payload: [UInt8]
-        let operationID: UInt8
+struct BluetoothRequest {
 
-        /// Nothing format: 55 60 01 [CMD_L] [CMD_H] [LEN] 00 [OP_ID] [PAYLOAD] [CRC_L](optional) [CRC_H](optional)
-        init?(data: [UInt8]) {
-            guard
-                data.count >= 8, // at least header fields without payload
-                data[0] == 0x55 // verify first header byte
-            else {
-                return nil
-            }
+    let command: UInt16
+    let payload: [UInt8]
+    let operationID: UInt8
 
-            let payloadLength = Int(data[5])
-            // Determine if CRC bytes are present
-            let withCRC = (data.count >= 8 + payloadLength + 2)
+    static let headerPrefix: [UInt8] = [0x55, 0x60, 0x01]
+    static let headerSize = 8
+}
 
-            // Total bytes needed for a valid packet
-            let requiredLength = 8 + payloadLength + (withCRC ? 2 : 0)
-            guard data.count >= requiredLength else {
-                return nil
-            }
+struct BluetoothResponse {
 
-            // Extract command (little-endian)
-            let cmdBytes = Data([data[3], data[4]])
-            self.command = cmdBytes.withUnsafeBytes { $0.load(as: UInt16.self) }
+    let command: UInt16
+    let payload: [UInt8]
+    let operationID: UInt8
 
-            // Extract operation ID and payload
-            self.operationID = data[7]
-            self.payload = Array(data[8..<(8 + payloadLength)])
+    /// Nothing format: 55 60 01 [CMD_L] [CMD_H] [LEN] 00 [OP_ID] [PAYLOAD] [CRC_L](optional) [CRC_H](optional)
+    init?(data: [UInt8]) {
+        guard
+            data.count >= 8, // at least header fields without payload
+            data[0] == 0x55 // verify first header byte
+        else {
+            return nil
+        }
 
-            // If CRC is present, verify it
-            if withCRC {
-                let crcIndex = 8 + payloadLength
-                // Read CRC low and high bytes (little-endian)
-                let receivedCRC = UInt16(data[crcIndex]) | (UInt16(data[crcIndex + 1]) << 8)
+        let payloadLength = Int(data[5])
+        // Determine if CRC bytes are present
+        let withCRC = (data.count >= 8 + payloadLength + 2)
 
-                // Calculate CRC over the full packet (header + payload), which is what
-                // most Nothing devices use today.
-                let headerCRC = CRC16.calculate(data: Array(data[0..<crcIndex]))
+        // Total bytes needed for a valid packet
+        let requiredLength = 8 + payloadLength + (withCRC ? 2 : 0)
+        guard data.count >= requiredLength else {
+            return nil
+        }
 
-                if receivedCRC != headerCRC {
-                    // Some newer models (e.g. CMF Buds Pro 2) only include the payload
-                    // when producing the CRC bytes. Try that as a secondary strategy so
-                    // we can accept both formats.
-                    let payloadCRC = CRC16.calculate(data: Array(data[8..<crcIndex]))
-                    guard receivedCRC == payloadCRC else {
-                        return nil
-                    }
+        // Extract command (little-endian)
+        let cmdBytes = Data([data[3], data[4]])
+        self.command = cmdBytes.withUnsafeBytes { $0.load(as: UInt16.self) }
+
+        // Extract operation ID and payload
+        self.operationID = data[7]
+        self.payload = Array(data[8..<(8 + payloadLength)])
+
+        // If CRC is present, verify it
+        if withCRC {
+            let crcIndex = 8 + payloadLength
+            // Read CRC low and high bytes (little-endian)
+            let receivedCRC = UInt16(data[crcIndex]) | (UInt16(data[crcIndex + 1]) << 8)
+
+            // Calculate CRC over the full packet (header + payload), which is what
+            // most Nothing devices use today.
+            let headerCRC = CRC16.calculate(data: Array(data[0..<crcIndex]))
+
+            if receivedCRC != headerCRC {
+                // Some newer models (e.g. CMF Buds Pro 2) only include the payload
+                // when producing the CRC bytes. Try that as a secondary strategy so
+                // we can accept both formats.
+                let payloadCRC = CRC16.calculate(data: Array(data[8..<crcIndex]))
+                guard receivedCRC == payloadCRC else {
+                    return nil
                 }
             }
         }
     }
+}
 
-    struct CRC16 {
+struct CRC16 {
 
-        static func calculate(data: [UInt8]) -> UInt16 {
-            var crc: UInt16 = 0xFFFF
+    static func calculate(data: [UInt8]) -> UInt16 {
+        var crc: UInt16 = 0xFFFF
 
-            for byte in data {
-                crc ^= UInt16(byte)
-                for _ in 0..<8 {
-                    if (crc & 1) != 0 {
-                        crc = (crc >> 1) ^ 0xA001
-                    } else {
-                        crc = crc >> 1
-                    }
+        for byte in data {
+            crc ^= UInt16(byte)
+            for _ in 0..<8 {
+                if (crc & 1) != 0 {
+                    crc = (crc >> 1) ^ 0xA001
+                } else {
+                    crc = crc >> 1
                 }
             }
-
-            return crc
         }
-    }
 
-    struct Gesture {
-        let type: GestureType
-        let action: GestureAction
-        let device: GestureDevice?
+        return crc
     }
+}
+
+struct Gesture {
+    let type: GestureType
+    let action: GestureAction
+    let device: GestureDevice?
 }
 
 // MARK: Bluetooth Request
 
-extension NothingEar.BluetoothRequest {
+extension BluetoothRequest {
 
     func toBytes() -> [UInt8] {
         var header = Self.headerPrefix
@@ -182,7 +179,7 @@ extension NothingEar.BluetoothRequest {
         header.append(contentsOf: payload)
 
         // Calculate and add CRC16
-        let crc = NothingEar.CRC16.calculate(data: header)
+        let crc = CRC16.calculate(data: header)
         header.append(UInt8(crc & 0xFF))
         header.append(UInt8(crc >> 8))
 
@@ -192,22 +189,22 @@ extension NothingEar.BluetoothRequest {
 
 // MARK: Bluetooth Request
 
-extension NothingEar.BluetoothRequest {
+extension BluetoothRequest {
 
     static func setANCMode(
-        _ mode: NothingEar.ANCMode,
+        _ mode: ANCMode,
         operationID: UInt8
     ) -> Self {
         let payload: [UInt8] = [0x01, mode.rawValue8, 0x00]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.anc,
+            command: BluetoothCommand.RequestWrite.anc,
             payload: payload,
             operationID: operationID
         )
     }
 
     static func setEnhancedBass(
-        _ settings: NothingEar.EnhancedBassSettings,
+        _ settings: EnhancedBassSettings,
         operationID: UInt8
     ) -> Self {
         let payload: [UInt8] = [
@@ -215,32 +212,32 @@ extension NothingEar.BluetoothRequest {
             UInt8(settings.level * 2)
         ]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.enhancedBass,
+            command: BluetoothCommand.RequestWrite.enhancedBass,
             payload: payload,
             operationID: operationID
         )
     }
 
     static func setEQPreset(
-        _ preset: NothingEar.EQPreset,
+        _ preset: EQPreset,
         operationID: UInt8
     ) -> Self {
         let payload: [UInt8] = [preset.rawValue8, 0x00]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.eq,
+            command: BluetoothCommand.RequestWrite.eq,
             payload: payload,
             operationID: operationID
         )
     }
 
     static func setGesture(
-        _ gesture: NothingEar.Gesture,
+        _ gesture: Gesture,
         operationID: UInt8
     ) -> Self {
         let deviceValue = gesture.device?.rawValue8 ?? 0x01
         let payload: [UInt8] = [0x01, deviceValue, 0x01, gesture.type.rawValue8, gesture.action.rawValue8]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.gesture,
+            command: BluetoothCommand.RequestWrite.gesture,
             payload: payload,
             operationID: operationID
         )
@@ -254,7 +251,7 @@ extension NothingEar.BluetoothRequest {
     ) -> Self {
         let payload: [UInt8] = [0x01, 0x01, isEnabled ? 0x01 : 0x00]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.inEarDetection,
+            command: BluetoothCommand.RequestWrite.inEarDetection,
             payload: payload,
             operationID: operationID
         )
@@ -266,28 +263,28 @@ extension NothingEar.BluetoothRequest {
     ) -> Self {
         let payload: [UInt8] = [isEnabled ? 0x01 : 0x02, 0x00]
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.lowLatency,
+            command: BluetoothCommand.RequestWrite.lowLatency,
             payload: payload,
             operationID: operationID
         )
     }
 
     static func setSpatialAudioMode(
-        _ mode: NothingEar.SpatialAudioMode,
+        _ mode: SpatialAudioMode,
         operationID: UInt8
     ) -> Self {
         let (firstByte, secondByte) = mode.rawValue8
         let payload: [UInt8] = [firstByte, secondByte]
 
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.spatialAudio,
+            command: BluetoothCommand.RequestWrite.spatialAudio,
             payload: payload,
             operationID: operationID
         )
     }
 
     static func setRingBuds(
-        _ ringBuds: NothingEar.RingBuds,
+        _ ringBuds: RingBuds,
         operationID: UInt8
     ) -> Self {
         let firstByte: UInt8 = switch ringBuds.bud {
@@ -299,7 +296,7 @@ extension NothingEar.BluetoothRequest {
         let payload: [UInt8] = [firstByte, secondByte]
 
         return Self(
-            command: NothingEar.BluetoothCommand.RequestWrite.ringBuds,
+            command: BluetoothCommand.RequestWrite.ringBuds,
             payload: payload,
             operationID: operationID
         )
@@ -308,9 +305,9 @@ extension NothingEar.BluetoothRequest {
 
 // MARK: Bluetooth Response
 
-extension NothingEar.BluetoothResponse {
+extension BluetoothResponse {
 
-    func parseBattery(model: NothingEar.Model) -> NothingEar.Battery? {
+    func parseBattery(model: Model) -> Battery? {
         guard payload.count >= 1 else {
             return nil
         }
@@ -344,7 +341,7 @@ extension NothingEar.BluetoothResponse {
                 return nil
             }
 
-            var devices: [UInt8: NothingEar.BatteryLevel] = [:]
+            var devices: [UInt8: BatteryLevel] = [:]
 
             for i in 0..<connectedDevices {
                 let deviceId = payload[1 + (i * 2)]
@@ -366,7 +363,7 @@ extension NothingEar.BluetoothResponse {
         }
     }
 
-    func parseANCMode() -> NothingEar.ANCMode? {
+    func parseANCMode() -> ANCMode? {
         guard payload.count >= 2 else {
             return nil
         }
@@ -374,7 +371,7 @@ extension NothingEar.BluetoothResponse {
         return .from8BitValue(payload[1])
     }
 
-    func parseEQPreset() -> NothingEar.EQPreset? {
+    func parseEQPreset() -> EQPreset? {
         if payload.count > 1 {
             return .from8BitValue(payload[1])
         } else if payload.count == 1 {
@@ -384,7 +381,7 @@ extension NothingEar.BluetoothResponse {
         }
     }
 
-    func parseGestures() -> [NothingEar.Gesture] {
+    func parseGestures() -> [Gesture] {
         guard payload.count >= 1 else {
             return []
         }
@@ -395,14 +392,14 @@ extension NothingEar.BluetoothResponse {
             return []
         }
 
-        var gestures: [NothingEar.Gesture] = []
+        var gestures: [Gesture] = []
 
         for i in 0..<gestureCount {
             let offset = 1 + (i * 4)
             guard
-                let device = NothingEar.GestureDevice.from8BitValue(payload[offset]),
-                let type = NothingEar.GestureType.from8BitValue(payload[offset + 2]),
-                let action = NothingEar.GestureAction.from8BitValue(payload[offset + 3])
+                let device = GestureDevice.from8BitValue(payload[offset]),
+                let type = GestureType.from8BitValue(payload[offset + 2]),
+                let action = GestureAction.from8BitValue(payload[offset + 3])
             else {
                 continue
             }
@@ -514,7 +511,7 @@ extension NothingEar.BluetoothResponse {
         return payload[0] == 1
     }
 
-    func parseEnhancedBassSettings() -> NothingEar.EnhancedBassSettings? {
+    func parseEnhancedBassSettings() -> EnhancedBassSettings? {
         guard payload.count >= 2 else {
             return nil
         }
@@ -525,7 +522,7 @@ extension NothingEar.BluetoothResponse {
         return .init(isEnabled: enabled, level: level)
     }
 
-    func parseSpatialAudioMode() -> NothingEar.SpatialAudioMode? {
+    func parseSpatialAudioMode() -> SpatialAudioMode? {
         guard payload.count >= 2 else {
             return nil
         }
@@ -541,7 +538,7 @@ extension NothingEar.BluetoothResponse {
         }
     }
 
-    func parseRingBuds() -> NothingEar.RingBuds? {
+    func parseRingBuds() -> RingBuds? {
         guard payload.count >= 3 else {
             return nil
         }
@@ -549,7 +546,7 @@ extension NothingEar.BluetoothResponse {
         let budByte = payload[1]
         let onByte = payload[2]
 
-        let bud: NothingEar.RingBuds.Bud = switch budByte {
+        let bud: RingBuds.Bud = switch budByte {
             case 0x01: .left
             case 0x03: .right
             case 0x06: .unibody
@@ -565,7 +562,7 @@ extension NothingEar.BluetoothResponse {
 
 // MARK: Active Noise Cancellation Mode - Bytes
 
-extension NothingEar.ANCMode {
+extension ANCMode {
 
     var rawValue8: UInt8 {
         switch self {
@@ -593,7 +590,7 @@ extension NothingEar.ANCMode {
 
 // MARK: Spatial Audio Mode - Bytes
 
-extension NothingEar.SpatialAudioMode {
+extension SpatialAudioMode {
 
     var rawValue8: (UInt8, UInt8) {
         switch self {
@@ -615,7 +612,7 @@ extension NothingEar.SpatialAudioMode {
 
 // MARK: Equalizer Preset - Bytes
 
-extension NothingEar.EQPreset {
+extension EQPreset {
 
     var rawValue8: UInt8 {
         switch self {
@@ -643,7 +640,7 @@ extension NothingEar.EQPreset {
 
 // MARK: Gesture Device - Bytes
 
-extension NothingEar.GestureDevice {
+extension GestureDevice {
 
     var rawValue8: UInt8 {
         switch self {
@@ -663,7 +660,7 @@ extension NothingEar.GestureDevice {
 
 // MARK: Gesture Type - Bytes
 
-extension NothingEar.GestureType {
+extension GestureType {
 
     var rawValue8: UInt8 {
         switch self {
@@ -687,7 +684,7 @@ extension NothingEar.GestureType {
 
 // MARK: Gesture Action - Bytes
 
-extension NothingEar.GestureAction {
+extension GestureAction {
 
     var rawValue8: UInt8 {
         switch self {

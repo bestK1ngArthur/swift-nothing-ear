@@ -1,27 +1,24 @@
 import Foundation
 
-extension NothingEar {
-
-    /// Supported Nothing Ear device models
-    public enum Model: Sendable {
-        case ear1(Ear1)                       // Nothing Ear (1)
-        case ear2(Ear2)                       // Nothing Ear (2)
-        case ear3(Ear3)                       // Nothing Ear (3)
-        case earStick                         // Nothing Ear (stick)
-        case earOpen                          // Nothing Ear (open)
-        case ear(Ear)                         // Nothing Ear
-        case earA(EarA)                       // Nothing Ear (a)
-        case headphone1(Headphone1)           // Nothing Headphone (1)
-        case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
-        case cmfBuds(CMFBuds)                 // CMF Buds
-        case cmfBuds2(CMFBuds2)               // CMF Buds 2
-        case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
-        case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
-        case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
-    }
+/// Supported Nothing Ear device models
+public enum Model: Sendable {
+    case ear1(Ear1)                       // Nothing Ear (1)
+    case ear2(Ear2)                       // Nothing Ear (2)
+    case ear3(Ear3)                       // Nothing Ear (3)
+    case earStick                         // Nothing Ear (stick)
+    case earOpen                          // Nothing Ear (open)
+    case ear(Ear)                         // Nothing Ear
+    case earA(EarA)                       // Nothing Ear (a)
+    case headphone1(Headphone1)           // Nothing Headphone (1)
+    case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
+    case cmfBuds(CMFBuds)                 // CMF Buds
+    case cmfBuds2(CMFBuds2)               // CMF Buds 2
+    case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
+    case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
+    case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
 }
 
-extension NothingEar.Model {
+extension Model {
 
     public enum Ear1: Sendable {
         case black
@@ -185,7 +182,7 @@ extension NothingEar.Model {
 
 // MARK: Model Detection
 
-extension NothingEar.Model {
+extension Model {
 
     static func getModel(for deviceName: String, serialNumber: String) -> Self? {
         // Try to detect model by name without color
@@ -347,7 +344,7 @@ extension NothingEar.Model {
     }
 }
 
-extension NothingEar.Model {
+extension Model {
 
     static func isBaseEqual(lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {

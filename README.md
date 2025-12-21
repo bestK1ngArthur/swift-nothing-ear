@@ -60,14 +60,14 @@ import SwiftNothingEar
 
 @MainActor
 class ViewController: UIViewController {
-    private var nothingEarDevice: NothingEar.Device!
+    private var nothingEarDevice: Device!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Create device with callbacks
-        nothingEarDevice = NothingEar.Device(
-            NothingEar.Callback(
+        nothingEarDevice = Device(
+            Callback(
                 onDiscover: { peripheral in
                     print("Discovered device: \(peripheral.name ?? "Unknown")")
                 },
@@ -235,11 +235,11 @@ if let deviceInfo = nothingEarDevice.deviceInfo,
    deviceInfo.model.supportsEnhancedBass {
     
     // Enable enhanced bass with level 50
-    let bassSettings = NothingEar.EnhancedBassSettings(isEnabled: true, level: 50)
+    let bassSettings = EnhancedBassSettings(isEnabled: true, level: 50)
     nothingEarDevice.setEnhancedBass(bassSettings)
     
     // Disable enhanced bass
-    let disabledBass = NothingEar.EnhancedBassSettings(isEnabled: false, level: 0)
+    let disabledBass = EnhancedBassSettings(isEnabled: false, level: 0)
     nothingEarDevice.setEnhancedBass(disabledBass)
 }
 ```
@@ -291,8 +291,8 @@ if let settings = nothingEarDevice.deviceSettings {
 
 ```swift
 // Handle errors in callback
-nothingEarDevice = NothingEar.Device(
-    NothingEar.Callback(
+nothingEarDevice = Device(
+    Callback(
         // ... other callbacks ...
         onError: { error in
             switch error {

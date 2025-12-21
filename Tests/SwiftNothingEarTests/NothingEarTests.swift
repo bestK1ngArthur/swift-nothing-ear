@@ -7,38 +7,38 @@ final class NothingEarTests: XCTestCase {
 
     func testNothingEarModelProperties() {
         // Test ANC support
-        XCTAssertTrue(NothingEar.Model.ear1(.white).supportsANC)
-        XCTAssertTrue(NothingEar.Model.ear2(.white).supportsANC)
-        XCTAssertTrue(NothingEar.Model.ear3(.white).supportsANC)
-        XCTAssertFalse(NothingEar.Model.earStick.supportsANC)
-        XCTAssertFalse(NothingEar.Model.earOpen.supportsANC)
+        XCTAssertTrue(Model.ear1(.white).supportsANC)
+        XCTAssertTrue(Model.ear2(.white).supportsANC)
+        XCTAssertTrue(Model.ear3(.white).supportsANC)
+        XCTAssertFalse(Model.earStick.supportsANC)
+        XCTAssertFalse(Model.earOpen.supportsANC)
 
         // Test Custom EQ support
-        XCTAssertTrue(NothingEar.Model.ear1(.white).supportsCustomEQ)
-        XCTAssertTrue(NothingEar.Model.ear2(.white).supportsCustomEQ)
-        XCTAssertTrue(NothingEar.Model.ear3(.white).supportsCustomEQ)
-        XCTAssertFalse(NothingEar.Model.earStick.supportsCustomEQ)
+        XCTAssertTrue(Model.ear1(.white).supportsCustomEQ)
+        XCTAssertTrue(Model.ear2(.white).supportsCustomEQ)
+        XCTAssertTrue(Model.ear3(.white).supportsCustomEQ)
+        XCTAssertFalse(Model.earStick.supportsCustomEQ)
 
         // Test Enhanced Bass support
-        XCTAssertTrue(NothingEar.Model.ear(.white).supportsEnhancedBass)
-        XCTAssertTrue(NothingEar.Model.cmfBudsPro2(.white).supportsEnhancedBass)
-        XCTAssertTrue(NothingEar.Model.cmfBuds2(.darkGrey).supportsEnhancedBass)
-        XCTAssertFalse(NothingEar.Model.ear1(.white).supportsEnhancedBass)
-        XCTAssertFalse(NothingEar.Model.ear2(.white).supportsEnhancedBass)
-        XCTAssertFalse(NothingEar.Model.ear3(.white).supportsEnhancedBass)
+        XCTAssertTrue(Model.ear(.white).supportsEnhancedBass)
+        XCTAssertTrue(Model.cmfBudsPro2(.white).supportsEnhancedBass)
+        XCTAssertTrue(Model.cmfBuds2(.darkGrey).supportsEnhancedBass)
+        XCTAssertFalse(Model.ear1(.white).supportsEnhancedBass)
+        XCTAssertFalse(Model.ear2(.white).supportsEnhancedBass)
+        XCTAssertFalse(Model.ear3(.white).supportsEnhancedBass)
 
         // Test display names
-        XCTAssertEqual(NothingEar.Model.ear1(.white).displayName, "Nothing Ear (1)")
-        XCTAssertEqual(NothingEar.Model.ear2(.white).displayName, "Nothing Ear (2)")
-        XCTAssertEqual(NothingEar.Model.ear3(.white).displayName, "Nothing Ear (3)")
-        XCTAssertEqual(NothingEar.Model.cmfBudsPro(.white).displayName, "CMF Buds Pro")
-        XCTAssertEqual(NothingEar.Model.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
+        XCTAssertEqual(Model.ear1(.white).displayName, "Nothing Ear (1)")
+        XCTAssertEqual(Model.ear2(.white).displayName, "Nothing Ear (2)")
+        XCTAssertEqual(Model.ear3(.white).displayName, "Nothing Ear (3)")
+        XCTAssertEqual(Model.cmfBudsPro(.white).displayName, "CMF Buds Pro")
+        XCTAssertEqual(Model.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
     }
 
     func testEar3SerialNumberDetection() {
         // Test real serial number for white ear3
         let whiteEar3Serial = "SH10252535010003"
-        let detectedModel = NothingEar.Model.getModel(from: whiteEar3Serial)
+        let detectedModel = Model.getModel(from: whiteEar3Serial)
 
         XCTAssertNotNil(detectedModel)
         if case .ear3(let color) = detectedModel {
@@ -49,7 +49,7 @@ final class NothingEarTests: XCTestCase {
 
         // Test hypothetical black ear3 serial
         let blackEar3Serial = "SH10262635010003"
-        let detectedBlackModel = NothingEar.Model.getModel(from: blackEar3Serial)
+        let detectedBlackModel = Model.getModel(from: blackEar3Serial)
 
         XCTAssertNotNil(detectedBlackModel)
         if case .ear3(let color) = detectedBlackModel {
@@ -60,11 +60,11 @@ final class NothingEarTests: XCTestCase {
     }
 
     func testBatteryStatus() {
-        let leftBattery = NothingEar.BatteryLevel(level: 85, isCharging: false, isConnected: true)
-        let rightBattery = NothingEar.BatteryLevel(level: 90, isCharging: true, isConnected: true)
-        let caseBattery = NothingEar.BatteryLevel(level: 45, isCharging: false, isConnected: true)
+        let leftBattery = BatteryLevel(level: 85, isCharging: false, isConnected: true)
+        let rightBattery = BatteryLevel(level: 90, isCharging: true, isConnected: true)
+        let caseBattery = BatteryLevel(level: 45, isCharging: false, isConnected: true)
 
-        let batteryStatus = NothingEar.Battery.budsWithCase(case: caseBattery, leftBud: leftBattery, rightBud: rightBattery)
+        let batteryStatus = Battery.budsWithCase(case: caseBattery, leftBud: leftBattery, rightBud: rightBattery)
 
         // Test budsWithCase battery type
         if case .budsWithCase(let caseBat, let leftBud, let rightBud) = batteryStatus {
@@ -78,7 +78,7 @@ final class NothingEarTests: XCTestCase {
         }
 
         // Test disconnected battery
-        let disconnected = NothingEar.BatteryLevel.disconnected
+        let disconnected = BatteryLevel.disconnected
         XCTAssertEqual(disconnected.level, 0)
         XCTAssertFalse(disconnected.isCharging)
         XCTAssertFalse(disconnected.isConnected)
@@ -86,36 +86,36 @@ final class NothingEarTests: XCTestCase {
 
     func testANCModeMapping() {
         // Test display names
-        XCTAssertEqual(NothingEar.ANCMode.off.displayName, "Off")
-        XCTAssertEqual(NothingEar.ANCMode.transparent.displayName, "Transparency")
-        XCTAssertEqual(NothingEar.ANCMode.noiseCancellation(.high).displayName, "Noise Cancellation")
+        XCTAssertEqual(ANCMode.off.displayName, "Off")
+        XCTAssertEqual(ANCMode.transparent.displayName, "Transparency")
+        XCTAssertEqual(ANCMode.noiseCancellation(.high).displayName, "Noise Cancellation")
 
         // Test raw value conversion
-        XCTAssertEqual(NothingEar.ANCMode.off.rawValue8, 0x05)
-        XCTAssertEqual(NothingEar.ANCMode.transparent.rawValue8, 0x07)
-        XCTAssertEqual(NothingEar.ANCMode.noiseCancellation(.high).rawValue8, 0x01)
+        XCTAssertEqual(ANCMode.off.rawValue8, 0x05)
+        XCTAssertEqual(ANCMode.transparent.rawValue8, 0x07)
+        XCTAssertEqual(ANCMode.noiseCancellation(.high).rawValue8, 0x01)
 
         // Test reverse conversion
-        XCTAssertEqual(NothingEar.ANCMode.from8BitValue(0x05), .off)
-        XCTAssertEqual(NothingEar.ANCMode.from8BitValue(0x07), .transparent)
-        XCTAssertEqual(NothingEar.ANCMode.from8BitValue(0x01), .noiseCancellation(.high))
-        XCTAssertNil(NothingEar.ANCMode.from8BitValue(0xFF))
+        XCTAssertEqual(ANCMode.from8BitValue(0x05), .off)
+        XCTAssertEqual(ANCMode.from8BitValue(0x07), .transparent)
+        XCTAssertEqual(ANCMode.from8BitValue(0x01), .noiseCancellation(.high))
+        XCTAssertNil(ANCMode.from8BitValue(0xFF))
     }
 
     func testEQPreset() {
-        XCTAssertEqual(NothingEar.EQPreset.balanced.displayName, "Balanced")
-        XCTAssertEqual(NothingEar.EQPreset.voice.displayName, "Voice")
-        XCTAssertEqual(NothingEar.EQPreset.custom.displayName, "Custom")
-        XCTAssertEqual(NothingEar.EQPreset.moreBass.displayName, "More Bass")
+        XCTAssertEqual(EQPreset.balanced.displayName, "Balanced")
+        XCTAssertEqual(EQPreset.voice.displayName, "Voice")
+        XCTAssertEqual(EQPreset.custom.displayName, "Custom")
+        XCTAssertEqual(EQPreset.moreBass.displayName, "More Bass")
 
-        XCTAssertEqual(NothingEar.EQPreset.balanced.rawValue8, 0x00)
-        XCTAssertEqual(NothingEar.EQPreset.voice.rawValue8, 0x01)
-        XCTAssertEqual(NothingEar.EQPreset.custom.rawValue8, 0x05)
-        XCTAssertEqual(NothingEar.EQPreset.moreBass.rawValue8, 0x03)
+        XCTAssertEqual(EQPreset.balanced.rawValue8, 0x00)
+        XCTAssertEqual(EQPreset.voice.rawValue8, 0x01)
+        XCTAssertEqual(EQPreset.custom.rawValue8, 0x05)
+        XCTAssertEqual(EQPreset.moreBass.rawValue8, 0x03)
     }
 
     func testCustomEQSettings() {
-        let customEQ = NothingEar.EQPresetCustom(lowFrequency: -2.5, midFrequency: 1.0, highFrequency: 3.2)
+        let customEQ = EQPresetCustom(lowFrequency: -2.5, midFrequency: 1.0, highFrequency: 3.2)
 
         XCTAssertEqual(customEQ.lowFrequency, -2.5)
         XCTAssertEqual(customEQ.midFrequency, 1.0)
@@ -123,26 +123,26 @@ final class NothingEarTests: XCTestCase {
     }
 
     func testGestureMapping() {
-        let gesture = NothingEar.Gesture(type: .doubleTap, action: .playPause, device: .left)
+        let gesture = Gesture(type: .doubleTap, action: .playPause, device: .left)
 
         XCTAssertEqual(gesture.device, .left)
         XCTAssertEqual(gesture.type, .doubleTap)
         XCTAssertEqual(gesture.action, .playPause)
 
-        XCTAssertEqual(NothingEar.GestureDevice.left.rawValue8, 0x02)
-        XCTAssertEqual(NothingEar.GestureDevice.right.rawValue8, 0x03)
+        XCTAssertEqual(GestureDevice.left.rawValue8, 0x02)
+        XCTAssertEqual(GestureDevice.right.rawValue8, 0x03)
 
-        XCTAssertEqual(NothingEar.GestureType.tap.rawValue8, 0x01)
-        XCTAssertEqual(NothingEar.GestureType.doubleTap.rawValue8, 0x02)
-        XCTAssertEqual(NothingEar.GestureType.longPress.rawValue8, 0x0B)
+        XCTAssertEqual(GestureType.tap.rawValue8, 0x01)
+        XCTAssertEqual(GestureType.doubleTap.rawValue8, 0x02)
+        XCTAssertEqual(GestureType.longPress.rawValue8, 0x0B)
 
-        XCTAssertEqual(NothingEar.GestureAction.playPause.rawValue8, 0x01)
-        XCTAssertEqual(NothingEar.GestureAction.nextTrack.rawValue8, 0x02)
-        XCTAssertEqual(NothingEar.GestureAction.voiceAssistant.rawValue8, 0x06)
+        XCTAssertEqual(GestureAction.playPause.rawValue8, 0x01)
+        XCTAssertEqual(GestureAction.nextTrack.rawValue8, 0x02)
+        XCTAssertEqual(GestureAction.voiceAssistant.rawValue8, 0x06)
     }
 
     func testDeviceSettings() {
-        var settings = NothingEar.DeviceSettings.default
+        var settings = DeviceSettings.default
         XCTAssertFalse(settings.inEarDetection) // Default false
         XCTAssertFalse(settings.lowLatency) // Default false
         XCTAssertFalse(settings.personalizedANC) // Default false
@@ -156,16 +156,16 @@ final class NothingEarTests: XCTestCase {
     }
 
     func testEnhancedBassSettings() {
-        let bass1 = NothingEar.EnhancedBassSettings(isEnabled: true, level: 50)
+        let bass1 = EnhancedBassSettings(isEnabled: true, level: 50)
         XCTAssertTrue(bass1.isEnabled)
         XCTAssertEqual(bass1.level, 50)
 
         // Test different settings
-        let bass2 = NothingEar.EnhancedBassSettings(isEnabled: false, level: 100)
+        let bass2 = EnhancedBassSettings(isEnabled: false, level: 100)
         XCTAssertFalse(bass2.isEnabled)
         XCTAssertEqual(bass2.level, 100)
 
-        let bass3 = NothingEar.EnhancedBassSettings(isEnabled: true, level: 0)
+        let bass3 = EnhancedBassSettings(isEnabled: true, level: 0)
         XCTAssertTrue(bass3.isEnabled)
         XCTAssertEqual(bass3.level, 0)
     }
@@ -185,8 +185,8 @@ final class NothingEarTests: XCTestCase {
         let cmfPayloadWithCRCA: [UInt8] = cmfBasePayload + [0x19, 0xE1]
         let cmfPayloadWithCRCB: [UInt8] = cmfBasePayload + [0xEF, 0xA4]
 
-        func makeResponse(payload: [UInt8]) -> NothingEar.BluetoothResponse? {
-            let command = NothingEar.BluetoothCommand.Response.serialNumber
+        func makeResponse(payload: [UInt8]) -> BluetoothResponse? {
+            let command = BluetoothCommand.Response.serialNumber
             let data: [UInt8] = [
                 0x55, 0x60, 0x01,
                 UInt8(command & 0xFF),
@@ -196,7 +196,7 @@ final class NothingEarTests: XCTestCase {
                 0x01
             ] + payload
 
-            return NothingEar.BluetoothResponse(data: data)
+            return BluetoothResponse(data: data)
         }
 
         guard
@@ -226,20 +226,20 @@ final class NothingEarTests: XCTestCase {
 
     func testCRC16Calculation() {
         let testData: [UInt8] = [0x55, 0x60, 0x01, 0x07, 0xC0, 0x00, 0x00, 0x01]
-        let crc = NothingEar.CRC16.calculate(data: testData)
+        let crc = CRC16.calculate(data: testData)
 
         // CRC should be deterministic for the same input
-        let crc2 = NothingEar.CRC16.calculate(data: testData)
+        let crc2 = CRC16.calculate(data: testData)
         XCTAssertEqual(crc, crc2)
 
         // Different data should produce different CRC
         let differentData: [UInt8] = [0x55, 0x60, 0x01, 0x07, 0xC1, 0x00, 0x00, 0x01]
-        let differentCRC = NothingEar.CRC16.calculate(data: differentData)
+        let differentCRC = CRC16.calculate(data: differentData)
         XCTAssertNotEqual(crc, differentCRC)
     }
 
     func testBluetoothRequestCreation() {
-        let request = NothingEar.BluetoothRequest(command: 0xC007, payload: [], operationID: 1)
+        let request = BluetoothRequest(command: 0xC007, payload: [], operationID: 1)
         let bytes = request.toBytes()
 
         // Check header
@@ -263,7 +263,7 @@ final class NothingEarTests: XCTestCase {
 
     func testResponseParsing() {
         // Test battery response parsing
-        let batteryResponse = NothingEar.BluetoothResponse(data: [0x55, 0x60, 0x01, 0x01, 0xE0, 0x05, 0x00, 0x01, 0x02, 0x02, 0x55, 0x03, 0x47])
+        let batteryResponse = BluetoothResponse(data: [0x55, 0x60, 0x01, 0x01, 0xE0, 0x05, 0x00, 0x01, 0x02, 0x02, 0x55, 0x03, 0x47])
         XCTAssertNotNil(batteryResponse)
         if let response = batteryResponse {
             let battery = response.parseBattery(model: .ear1(.white))
@@ -277,7 +277,7 @@ final class NothingEarTests: XCTestCase {
         }
 
         // Test ANC response parsing
-        let ancResponse = NothingEar.BluetoothResponse(data: [0x55, 0x60, 0x01, 0x1E, 0x40, 0x02, 0x00, 0x01, 0x01, 0x05])
+        let ancResponse = BluetoothResponse(data: [0x55, 0x60, 0x01, 0x1E, 0x40, 0x02, 0x00, 0x01, 0x01, 0x05])
         XCTAssertNotNil(ancResponse)
         if let response = ancResponse {
             let ancMode = response.parseANCMode()
@@ -285,7 +285,7 @@ final class NothingEarTests: XCTestCase {
         }
 
         // Test EQ response parsing
-        let eqResponse = NothingEar.BluetoothResponse(data: [0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01, 0x03])
+        let eqResponse = BluetoothResponse(data: [0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01, 0x03])
         XCTAssertNotNil(eqResponse)
         if let response = eqResponse {
             let eqPreset = response.parseEQPreset()
@@ -294,7 +294,7 @@ final class NothingEarTests: XCTestCase {
 
         // Test firmware parsing
         let firmwareData = Array("1.2.3".utf8)
-        let firmwareResponse = NothingEar.BluetoothResponse(data: [0x55, 0x60, 0x01, 0x42, 0x40, UInt8(firmwareData.count), 0x00, 0x01] + firmwareData)
+        let firmwareResponse = BluetoothResponse(data: [0x55, 0x60, 0x01, 0x42, 0x40, UInt8(firmwareData.count), 0x00, 0x01] + firmwareData)
         XCTAssertNotNil(firmwareResponse)
         if let response = firmwareResponse {
             let firmware = response.parseFirmwareVersion()
@@ -316,11 +316,11 @@ final class NothingEarTests: XCTestCase {
 
         // Calculate correct CRC
         var dataWithoutCRC = Array(responseData[0..<10])
-        let correctCRC = NothingEar.CRC16.calculate(data: dataWithoutCRC)
+        let correctCRC = CRC16.calculate(data: dataWithoutCRC)
         dataWithoutCRC.append(UInt8(correctCRC & 0xFF))
         dataWithoutCRC.append(UInt8(correctCRC >> 8))
 
-        let response = NothingEar.BluetoothResponse(data: dataWithoutCRC)
+        let response = BluetoothResponse(data: dataWithoutCRC)
         XCTAssertNotNil(response)
         XCTAssertEqual(response?.command, 0xC007)
         XCTAssertEqual(response?.operationID, 1)
@@ -337,11 +337,11 @@ final class NothingEarTests: XCTestCase {
         let payload: [UInt8] = [0x0C, 0x32, 0x2C, 0x31]
         payloadOnlyPacket.append(contentsOf: payload)
 
-        let payloadCRC = NothingEar.CRC16.calculate(data: payload)
+        let payloadCRC = CRC16.calculate(data: payload)
         payloadOnlyPacket.append(UInt8(payloadCRC & 0xFF))
         payloadOnlyPacket.append(UInt8(payloadCRC >> 8))
 
-        let payloadOnlyResponse = NothingEar.BluetoothResponse(data: payloadOnlyPacket)
+        let payloadOnlyResponse = BluetoothResponse(data: payloadOnlyPacket)
         XCTAssertNotNil(payloadOnlyResponse)
         XCTAssertEqual(payloadOnlyResponse?.command, 0x4006)
         XCTAssertEqual(payloadOnlyResponse?.operationID, 0x02)
@@ -351,17 +351,17 @@ final class NothingEarTests: XCTestCase {
     // MARK: - Error Tests
 
     func testConnectionErrors() {
-        XCTAssertEqual(NothingEar.ConnectionError.bluetooth(.unavailable).errorDescription,
+        XCTAssertEqual(ConnectionError.bluetooth(.unavailable).errorDescription,
                       "Bluetooth is not available on this device")
-        XCTAssertEqual(NothingEar.ConnectionError.deviceNotFound.errorDescription,
+        XCTAssertEqual(ConnectionError.deviceNotFound.errorDescription,
                       "Nothing device is not found")
-        XCTAssertEqual(NothingEar.ConnectionError.connectionFailed.errorDescription,
+        XCTAssertEqual(ConnectionError.connectionFailed.errorDescription,
                       "Failed to connect to device")
-        XCTAssertEqual(NothingEar.ConnectionError.invalidResponse.errorDescription,
+        XCTAssertEqual(ConnectionError.invalidResponse.errorDescription,
                       "Received invalid response from device")
-        XCTAssertEqual(NothingEar.ConnectionError.unsupportedOperation.errorDescription,
+        XCTAssertEqual(ConnectionError.unsupportedOperation.errorDescription,
                       "Operation not supported by this device model")
-        XCTAssertEqual(NothingEar.ConnectionError.timeout.errorDescription,
+        XCTAssertEqual(ConnectionError.timeout.errorDescription,
                       "Operation timed out")
     }
 
@@ -370,7 +370,7 @@ final class NothingEarTests: XCTestCase {
     @MainActor
     func testDeviceFeatureSupport() {
         // Create a minimal callback implementation for testing
-        let callback = NothingEar.Callback(
+        let callback = Callback(
             onDiscover: { _ in },
             onConnect: { _ in },
             onDisconnect: { _ in },
@@ -384,7 +384,7 @@ final class NothingEarTests: XCTestCase {
             onError: { _ in }
         )
 
-        let device = NothingEar.Device(callback)
+        let device = Device(callback)
 
         // Without device info, device should not be connected
         XCTAssertFalse(device.isConnected)
@@ -398,7 +398,7 @@ final class NothingEarTests: XCTestCase {
 
     @MainActor
     func testDeviceConnectionHandling() {
-        let callback = NothingEar.Callback(
+        let callback = Callback(
             onDiscover: { _ in },
             onConnect: { _ in },
             onDisconnect: { _ in },
@@ -412,7 +412,7 @@ final class NothingEarTests: XCTestCase {
             onError: { _ in }
         )
 
-        let device = NothingEar.Device(callback)
+        let device = Device(callback)
 
         // Test initial state
         XCTAssertEqual(device.connectionStatus, .disconnected)
@@ -431,11 +431,11 @@ final class NothingEarTests: XCTestCase {
     @MainActor
     func testConnectionStates() {
         // Test that foundConnected state exists and is different from others
-        let foundConnectedState = NothingEar.ConnectionStatus.foundConnected
-        let connectedState = NothingEar.ConnectionStatus.connected
-        let disconnectedState = NothingEar.ConnectionStatus.disconnected
-        let scanningState = NothingEar.ConnectionStatus.scanning
-        let connectingState = NothingEar.ConnectionStatus.connecting
+        let foundConnectedState = ConnectionStatus.foundConnected
+        let connectedState = ConnectionStatus.connected
+        let disconnectedState = ConnectionStatus.disconnected
+        let scanningState = ConnectionStatus.scanning
+        let connectingState = ConnectionStatus.connecting
 
         // All states should be different
         XCTAssertNotEqual(foundConnectedState, connectedState)
@@ -446,7 +446,7 @@ final class NothingEarTests: XCTestCase {
 
     @MainActor
     func testDeviceBasicOperations() {
-        let callback = NothingEar.Callback(
+        let callback = Callback(
             onDiscover: { _ in },
             onConnect: { _ in },
             onDisconnect: { _ in },
@@ -460,7 +460,7 @@ final class NothingEarTests: XCTestCase {
             onError: { _ in }
         )
 
-        let device = NothingEar.Device(callback)
+        let device = Device(callback)
 
         // Should not crash when Bluetooth is unavailable
         let initialState = device.connectionStatus
@@ -475,7 +475,7 @@ final class NothingEarTests: XCTestCase {
 
     @MainActor
     func testDevicePublicAPI() {
-        let callback = NothingEar.Callback(
+        let callback = Callback(
             onDiscover: { _ in },
             onConnect: { _ in },
             onDisconnect: { _ in },
@@ -489,7 +489,7 @@ final class NothingEarTests: XCTestCase {
             onError: { _ in }
         )
 
-        let device = NothingEar.Device(callback)
+        let device = Device(callback)
 
         // Test that basic properties are accessible
         XCTAssertEqual(device.connectionStatus, .disconnected)

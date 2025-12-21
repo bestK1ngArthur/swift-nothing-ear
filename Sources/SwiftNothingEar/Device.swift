@@ -7,151 +7,148 @@ import os.log
 import IOBluetooth
 #endif
 
-extension NothingEar {
+public enum ConnectionStatus: Sendable {
+    case disconnected
+    case scanning
+    case connecting
+    case connected
+    case foundConnected
+}
 
-    public enum ConnectionStatus: Sendable {
-        case disconnected
-        case scanning
-        case connecting
-        case connected
-        case foundConnected
+public enum ConnectionError: Error, LocalizedError, Sendable {
+
+    public enum Bluetooth: Sendable {
+        case poweredOff
+        case unauthorized
+        case unavailable
     }
 
-    public enum ConnectionError: Error, LocalizedError, Sendable {
+    case bluetooth(Bluetooth)
+    case connectionFailed
+    case deviceNotFound
+    case invalidResponse
+    case timeout
+    case unsupportedOperation
+}
 
-        public enum Bluetooth: Sendable {
-            case poweredOff
-            case unauthorized
-            case unavailable
-        }
+public struct Callback {
 
-        case bluetooth(Bluetooth)
-        case connectionFailed
-        case deviceNotFound
-        case invalidResponse
-        case timeout
-        case unsupportedOperation
+    let onDiscover: (CBPeripheral) -> Void
+
+    let onConnect: (Result<DeviceInfo, Error>) -> Void
+    let onDisconnect: (Result<Void, Error>) -> Void
+
+    let onUpdateBattery: (Battery?) -> Void
+    let onUpdateANCMode: (ANCMode?) -> Void
+    let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
+    let onUpdateEnhancedBass: (EnhancedBassSettings?) -> Void
+    let onUpdateEQPreset: (EQPreset?) -> Void
+    let onUpdateDeviceSettings: (DeviceSettings) -> Void
+    let onUpdateRingBuds: (RingBuds) -> Void
+
+    let onError: (ConnectionError) -> Void
+
+    public init(
+        onDiscover: @escaping (CBPeripheral) -> Void,
+        onConnect: @escaping (Result<DeviceInfo, Error>) -> Void,
+        onDisconnect: @escaping (Result<Void, Error>) -> Void,
+        onUpdateBattery: @escaping (Battery?) -> Void,
+        onUpdateANCMode: @escaping (ANCMode?) -> Void,
+        onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
+        onUpdateEnhancedBass: @escaping (EnhancedBassSettings?) -> Void,
+        onUpdateEQPreset: @escaping (EQPreset?) -> Void,
+        onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
+        onUpdateRingBuds: @escaping (RingBuds) -> Void,
+        onError: @escaping (ConnectionError) -> Void
+    ) {
+        self.onDiscover = onDiscover
+        self.onConnect = onConnect
+        self.onDisconnect = onDisconnect
+        self.onUpdateBattery = onUpdateBattery
+        self.onUpdateANCMode = onUpdateANCMode
+        self.onUpdateSpatialAudio = onUpdateSpatialAudio
+        self.onUpdateEnhancedBass = onUpdateEnhancedBass
+        self.onUpdateEQPreset = onUpdateEQPreset
+        self.onUpdateDeviceSettings = onUpdateDeviceSettings
+        self.onUpdateRingBuds = onUpdateRingBuds
+        self.onError = onError
     }
+}
 
-    public struct Callback {
+@MainActor
+public final class Device: NSObject {
 
-        let onDiscover: (CBPeripheral) -> Void
+    public private(set) var connectionStatus: ConnectionStatus = .disconnected
 
-        let onConnect: (Result<DeviceInfo, Error>) -> Void
-        let onDisconnect: (Result<Void, Error>) -> Void
+    public private(set) var deviceInfo: DeviceInfo?
+    public private(set) var deviceSettings: DeviceSettings?
 
-        let onUpdateBattery: (Battery?) -> Void
-        let onUpdateANCMode: (ANCMode?) -> Void
-        let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
-        let onUpdateEnhancedBass: (EnhancedBassSettings?) -> Void
-        let onUpdateEQPreset: (EQPreset?) -> Void
-        let onUpdateDeviceSettings: (DeviceSettings) -> Void
-        let onUpdateRingBuds: (RingBuds) -> Void
+    public private(set) var battery: Battery?
+    public private(set) var ancMode: ANCMode?
+    public private(set) var enhancedBass: EnhancedBassSettings?
+    public private(set) var eqPreset: EQPreset?
+    public private(set) var spatialAudio: SpatialAudioMode?
+    public private(set) var ringBuds: RingBuds?
 
-        let onError: (ConnectionError) -> Void
+    private let callback: Callback
 
-        public init(
-            onDiscover: @escaping (CBPeripheral) -> Void,
-            onConnect: @escaping (Result<DeviceInfo, Error>) -> Void,
-            onDisconnect: @escaping (Result<Void, Error>) -> Void,
-            onUpdateBattery: @escaping (Battery?) -> Void,
-            onUpdateANCMode: @escaping (ANCMode?) -> Void,
-            onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
-            onUpdateEnhancedBass: @escaping (EnhancedBassSettings?) -> Void,
-            onUpdateEQPreset: @escaping (EQPreset?) -> Void,
-            onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
-            onUpdateRingBuds: @escaping (RingBuds) -> Void,
-            onError: @escaping (ConnectionError) -> Void
-        ) {
-            self.onDiscover = onDiscover
-            self.onConnect = onConnect
-            self.onDisconnect = onDisconnect
-            self.onUpdateBattery = onUpdateBattery
-            self.onUpdateANCMode = onUpdateANCMode
-            self.onUpdateSpatialAudio = onUpdateSpatialAudio
-            self.onUpdateEnhancedBass = onUpdateEnhancedBass
-            self.onUpdateEQPreset = onUpdateEQPreset
-            self.onUpdateDeviceSettings = onUpdateDeviceSettings
-            self.onUpdateRingBuds = onUpdateRingBuds
-            self.onError = onError
-        }
-    }
+    // Fast Pair service UUID for discovering Nothing devices
+    private let fastPairUUID = CBUUID(string: "FE2C")
 
-    @MainActor
-    public final class Device: NSObject {
+    // Standard BLE services to filter out when looking for proprietary service
+    private let standardServices: Set<String> = [
+        "1800", // Generic Access
+        "1801", // Generic Attribute
+        "180A", // Device Information
+        "180F", // Battery Service
+        "1844", // LE Audio - Volume Control
+        "1846", // LE Audio - Audio Stream Control
+        "184D", // LE Audio - Published Audio Capabilities
+        "184E", // LE Audio - Common Audio Service
+        "184F", // LE Audio - Hearing Access Service
+        "1850", // LE Audio - Telephony and Media Audio
+        "1853", // LE Audio - Microphone Control
+        "1855", // LE Audio - Coordinated Set Identification
+        "FE2C"  // Fast Pair (used for discovery, not for communication)
+    ]
 
-        public private(set) var connectionStatus: ConnectionStatus = .disconnected
+    // Known proprietary services from Nothing/CMF devices, prioritised when scoring
+    private let preferredProprietaryServices: [String: Int] = [
+        "0000FD90-0000-1000-8000-00805F9B34FB": 300 // Nothing Ear / CMF control service
+    ]
 
-        public private(set) var deviceInfo: DeviceInfo?
-        public private(set) var deviceSettings: DeviceSettings?
+    private nonisolated(unsafe) var centralManager: CBCentralManager!
+    private nonisolated(unsafe) var connectedPeripheral: CBPeripheral?
 
-        public private(set) var battery: Battery?
-        public private(set) var ancMode: ANCMode?
-        public private(set) var enhancedBass: EnhancedBassSettings?
-        public private(set) var eqPreset: EQPreset?
-        public private(set) var spatialAudio: SpatialAudioMode?
-        public private(set) var ringBuds: RingBuds?
+    // Dynamically discovered characteristics
+    private nonisolated(unsafe) var proprietaryService: CBService?
+    private nonisolated(unsafe) var writeCharacteristic: CBCharacteristic?
+    private nonisolated(unsafe) var notifyCharacteristic: CBCharacteristic?
 
-        private let callback: Callback
+    // Service discovery state
+    private var candidateServices: [CBService] = []
+    private var servicesToCheck = 0
+    private var servicesChecked = 0
 
-        // Fast Pair service UUID for discovering Nothing devices
-        private let fastPairUUID = CBUUID(string: "FE2C")
+    private var operationID: UInt8 = 1
+    private var pendingOperations: [UInt8: (Data) -> Void] = [:]
 
-        // Standard BLE services to filter out when looking for proprietary service
-        private let standardServices: Set<String> = [
-            "1800", // Generic Access
-            "1801", // Generic Attribute
-            "180A", // Device Information
-            "180F", // Battery Service
-            "1844", // LE Audio - Volume Control
-            "1846", // LE Audio - Audio Stream Control
-            "184D", // LE Audio - Published Audio Capabilities
-            "184E", // LE Audio - Common Audio Service
-            "184F", // LE Audio - Hearing Access Service
-            "1850", // LE Audio - Telephony and Media Audio
-            "1853", // LE Audio - Microphone Control
-            "1855", // LE Audio - Coordinated Set Identification
-            "FE2C"  // Fast Pair (used for discovery, not for communication)
-        ]
+    // Track initial device info loading state
+    private var hasReceivedSerialNumber = false
+    private var hasReceivedFirmware = false
+    private var isInitialConnectionComplete = false
+    private var connectionTimeoutTask: Task<Void, Never>?
 
-        // Known proprietary services from Nothing/CMF devices, prioritised when scoring
-        private let preferredProprietaryServices: [String: Int] = [
-            "0000FD90-0000-1000-8000-00805F9B34FB": 300 // Nothing Ear / CMF control service
-        ]
-
-        private nonisolated(unsafe) var centralManager: CBCentralManager!
-        private nonisolated(unsafe) var connectedPeripheral: CBPeripheral?
-
-        // Dynamically discovered characteristics
-        private nonisolated(unsafe) var proprietaryService: CBService?
-        private nonisolated(unsafe) var writeCharacteristic: CBCharacteristic?
-        private nonisolated(unsafe) var notifyCharacteristic: CBCharacteristic?
-
-        // Service discovery state
-        private var candidateServices: [CBService] = []
-        private var servicesToCheck = 0
-        private var servicesChecked = 0
-
-        private var operationID: UInt8 = 1
-        private var pendingOperations: [UInt8: (Data) -> Void] = [:]
-
-        // Track initial device info loading state
-        private var hasReceivedSerialNumber = false
-        private var hasReceivedFirmware = false
-        private var isInitialConnectionComplete = false
-        private var connectionTimeoutTask: Task<Void, Never>?
-
-        public init(_ callback: Callback) {
-            self.callback = callback
-            super.init()
-            self.centralManager = CBCentralManager(delegate: self, queue: nil)
-        }
+    public init(_ callback: Callback) {
+        self.callback = callback
+        super.init()
+        self.centralManager = CBCentralManager(delegate: self, queue: nil)
     }
 }
 
 // MARK: Public Interface
 
-extension NothingEar.Device {
+extension Device {
 
     public var isConnected: Bool {
         connectionStatus == .connected && connectedPeripheral?.state == .connected
@@ -210,7 +207,7 @@ extension NothingEar.Device {
         centralManager.cancelPeripheralConnection(connectedPeripheral)
     }
 
-    public func setANCMode(_ mode: NothingEar.ANCMode) {
+    public func setANCMode(_ mode: ANCMode) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -232,7 +229,7 @@ extension NothingEar.Device {
         )
     }
 
-    public func setEnhancedBass(_ settings: NothingEar.EnhancedBassSettings) {
+    public func setEnhancedBass(_ settings: EnhancedBassSettings) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -254,7 +251,7 @@ extension NothingEar.Device {
         )
     }
 
-    public func setEQPreset(_ preset: NothingEar.EQPreset) {
+    public func setEQPreset(_ preset: EQPreset) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -304,7 +301,7 @@ extension NothingEar.Device {
         )
     }
 
-    public func setSpatialAudioMode(_ mode: NothingEar.SpatialAudioMode) {
+    public func setSpatialAudioMode(_ mode: SpatialAudioMode) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -327,9 +324,9 @@ extension NothingEar.Device {
     }
 
     public func setGesture(
-        type: NothingEar.GestureType,
-        action: NothingEar.GestureAction,
-        device: NothingEar.GestureDevice? = nil
+        type: GestureType,
+        action: GestureAction,
+        device: GestureDevice? = nil
     ) {
         guard isConnected else {
             callback.onError(.connectionFailed)
@@ -348,7 +345,7 @@ extension NothingEar.Device {
         )
     }
 
-    public func setRingBuds(_ ringBuds: NothingEar.RingBuds) {
+    public func setRingBuds(_ ringBuds: RingBuds) {
         guard isConnected else {
             callback.onError(.connectionFailed)
             return
@@ -373,7 +370,7 @@ extension NothingEar.Device {
 
 // MARK: Private Methods
 
-extension NothingEar.Device {
+extension Device {
 
     private func refreshDeviceStatus() {
         guard isConnected else { return }
@@ -386,7 +383,7 @@ extension NothingEar.Device {
         // Cancel any existing timeout task
         connectionTimeoutTask?.cancel()
 
-        NothingEar.Logger.bluetooth.info("📋 Starting initial device info request")
+        Logger.bluetooth.info("📋 Starting initial device info request")
 
         // Start timeout task (10 seconds)
         connectionTimeoutTask = Task { @MainActor in
@@ -395,7 +392,7 @@ extension NothingEar.Device {
             guard !Task.isCancelled else { return }
 
             if !isInitialConnectionComplete {
-                NothingEar.Logger.bluetooth.warning("⏱️ Connection timeout - device did not respond in time")
+                Logger.bluetooth.warning("⏱️ Connection timeout - device did not respond in time")
                 callback.onError(.timeout)
 
                 // Disconnect from device
@@ -428,7 +425,7 @@ extension NothingEar.Device {
         connectionTimeoutTask?.cancel()
         connectionTimeoutTask = nil
 
-        NothingEar.Logger.bluetooth.info("✅ Initial device info received, notifying connection success")
+        Logger.bluetooth.info("✅ Initial device info received, notifying connection success")
 
         // Notify that connection is complete
         if let deviceInfo {
@@ -436,7 +433,7 @@ extension NothingEar.Device {
         }
 
         // Now request all other device information
-        NothingEar.Logger.bluetooth.info("📋 Requesting additional device information")
+        Logger.bluetooth.info("📋 Requesting additional device information")
 
         let tasks: [() -> Void] = [
             // Request device settings
@@ -472,10 +469,10 @@ extension NothingEar.Device {
     }
 
     private func sendReadBatteryRequest() {
-        NothingEar.Logger.bluetooth.debug("🔋 Sending read battery request")
+        Logger.bluetooth.debug("🔋 Sending read battery request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.battery,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.battery,
             payload: [],
             operationID: nextOperationID()
         )
@@ -490,10 +487,10 @@ extension NothingEar.Device {
             return
         }
 
-        NothingEar.Logger.bluetooth.debug("🔇 Sending read ANC request")
+        Logger.bluetooth.debug("🔇 Sending read ANC request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.anc,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.anc,
             payload: [],
             operationID: nextOperationID()
         )
@@ -501,13 +498,13 @@ extension NothingEar.Device {
     }
 
     private func sendReadEQRequest() {
-        NothingEar.Logger.bluetooth.debug("🎵 Sending read EQ request")
+        Logger.bluetooth.debug("🎵 Sending read EQ request")
 
         let isListeningModeSupported = deviceInfo?.model.isListeningModeSupported ?? false
         let command = isListeningModeSupported
-            ? NothingEar.BluetoothCommand.RequestRead.listeningMode
-            : NothingEar.BluetoothCommand.RequestRead.eq
-        let request = NothingEar.BluetoothRequest(
+            ? BluetoothCommand.RequestRead.listeningMode
+            : BluetoothCommand.RequestRead.eq
+        let request = BluetoothRequest(
             command: command,
             payload: [],
             operationID: nextOperationID()
@@ -516,10 +513,10 @@ extension NothingEar.Device {
     }
 
     private func sendReadFirmwareRequest() {
-        NothingEar.Logger.bluetooth.debug("💾 Sending read firmware request")
+        Logger.bluetooth.debug("💾 Sending read firmware request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.firmware,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.firmware,
             payload: [],
             operationID: nextOperationID()
         )
@@ -534,10 +531,10 @@ extension NothingEar.Device {
             return
         }
 
-        NothingEar.Logger.bluetooth.debug("👂 Sending in-ear detection request")
+        Logger.bluetooth.debug("👂 Sending in-ear detection request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.inEarDetection,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.inEarDetection,
             payload: [],
             operationID: nextOperationID()
         )
@@ -545,10 +542,10 @@ extension NothingEar.Device {
     }
 
     private func sendReadLowLatencyRequest() {
-        NothingEar.Logger.bluetooth.debug("⚡ Sending read latency request")
+        Logger.bluetooth.debug("⚡ Sending read latency request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.lowLatency,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.lowLatency,
             payload: [],
             operationID: nextOperationID()
         )
@@ -556,10 +553,10 @@ extension NothingEar.Device {
     }
 
     private func sendEnhancedBassRequest() {
-        NothingEar.Logger.bluetooth.debug("🎶 Sending read enhanced bass request")
+        Logger.bluetooth.debug("🎶 Sending read enhanced bass request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.enhancedBass,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.enhancedBass,
             payload: [],
             operationID: nextOperationID()
         )
@@ -567,10 +564,10 @@ extension NothingEar.Device {
     }
 
     private func sendReadGestureRequest() {
-        NothingEar.Logger.bluetooth.debug("👆 Sending read gesture request")
+        Logger.bluetooth.debug("👆 Sending read gesture request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.gesture,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.gesture,
             payload: [],
             operationID: nextOperationID()
         )
@@ -578,10 +575,10 @@ extension NothingEar.Device {
     }
 
     private func sendReadSerialNumberRequest() {
-        NothingEar.Logger.bluetooth.debug("🏷️ Sending read serial number request")
+        Logger.bluetooth.debug("🏷️ Sending read serial number request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.serialNumber,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.serialNumber,
             payload: [],
             operationID: nextOperationID()
         )
@@ -596,10 +593,10 @@ extension NothingEar.Device {
             return
         }
 
-        NothingEar.Logger.bluetooth.debug("🎧 Sending read spatial audio request")
+        Logger.bluetooth.debug("🎧 Sending read spatial audio request")
 
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.spatialAudio,
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.spatialAudio,
             payload: [],
             operationID: nextOperationID()
         )
@@ -614,16 +611,16 @@ extension NothingEar.Device {
             return
         }
 
-        NothingEar.Logger.bluetooth.debug("🔔 Sending read ring buds request")
-        let request = NothingEar.BluetoothRequest(
-            command: NothingEar.BluetoothCommand.RequestRead.ringBuds,
+        Logger.bluetooth.debug("🔔 Sending read ring buds request")
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.ringBuds,
             payload: [],
             operationID: nextOperationID()
         )
         sendRequest(request)
     }
 
-    private func sendRequest(_ request: NothingEar.BluetoothRequest) {
+    private func sendRequest(_ request: BluetoothRequest) {
         guard
             let connectedPeripheral,
             let writeCharacteristic
@@ -633,53 +630,53 @@ extension NothingEar.Device {
         }
 
         let data = Data(request.toBytes())
-        NothingEar.Logger.logBluetoothData(Array(data), direction: .outgoing)
+        Logger.logBluetoothData(Array(data), direction: .outgoing)
         connectedPeripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
     }
 
     private func processResponse(_ data: Data) {
-        NothingEar.Logger.logBluetoothData(Array(data), direction: .incoming)
+        Logger.logBluetoothData(Array(data), direction: .incoming)
 
-        guard let response = NothingEar.BluetoothResponse(data: Array(data)) else {
+        guard let response = BluetoothResponse(data: Array(data)) else {
             callback.onError(.invalidResponse)
             return
         }
 
         switch response.command {
-            case NothingEar.BluetoothCommand.Response.serialNumber:
+            case BluetoothCommand.Response.serialNumber:
                 let deviceName = connectedPeripheral?.name ?? "Unknown"
                 if let serialNumber = response.parseSerialNumber(),
-                   let detectedModel = NothingEar.Model.getModel(for: deviceName, serialNumber: serialNumber) {
+                   let detectedModel = Model.getModel(for: deviceName, serialNumber: serialNumber) {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber
                     }
                     hasReceivedSerialNumber = true
-                    NothingEar.Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
+                    Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
 
                     // Check if we can complete the initial connection
                     completeInitialConnection()
                 } else {
-                    NothingEar.Logger.parsing.warning("🏷️ Failed to parse serial number from response")
+                    Logger.parsing.warning("🏷️ Failed to parse serial number from response")
                 }
 
-            case NothingEar.BluetoothCommand.Response.firmware:
+            case BluetoothCommand.Response.firmware:
                 let firmwareVersion = response.parseFirmwareVersion()
                 if !firmwareVersion.isEmpty {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.firmwareVersion = firmwareVersion
                     }
                     hasReceivedFirmware = true
-                    NothingEar.Logger.parsing.info("💾 Parsed firmware version: \(firmwareVersion, privacy: .public)")
+                    Logger.parsing.info("💾 Parsed firmware version: \(firmwareVersion, privacy: .public)")
 
                     // Check if we can complete the initial connection
                     completeInitialConnection()
                 } else {
-                    NothingEar.Logger.parsing.warning("💾 Failed to parse firmware version")
+                    Logger.parsing.warning("💾 Failed to parse firmware version")
                 }
 
-            case NothingEar.BluetoothCommand.Response.batteryA,
-                NothingEar.BluetoothCommand.Response.batteryB:
+            case BluetoothCommand.Response.batteryA,
+                BluetoothCommand.Response.batteryB:
                 if let deviceInfo, let battery = response.parseBattery(model: deviceInfo.model) {
                     self.battery = battery
                     callback.onUpdateBattery(battery)
@@ -691,94 +688,94 @@ extension NothingEar.Device {
                     case .budsWithCase(let caseLevel, let leftBud, let rightBud):
                         batteryDescription = "case=\(caseLevel.level)%, left=\(leftBud.level)%, right=\(rightBud.level)%"
                     }
-                    NothingEar.Logger.parsing.info("🔋 Parsed battery: \(batteryDescription, privacy: .public)")
+                    Logger.parsing.info("🔋 Parsed battery: \(batteryDescription, privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("🔋 Failed to parse battery data")
+                    Logger.parsing.warning("🔋 Failed to parse battery data")
                 }
 
-            case NothingEar.BluetoothCommand.Response.ancA,
-                NothingEar.BluetoothCommand.Response.ancB:
+            case BluetoothCommand.Response.ancA,
+                BluetoothCommand.Response.ancB:
                 if let ancMode = response.parseANCMode() {
                     self.ancMode = ancMode
                     callback.onUpdateANCMode(ancMode)
-                    NothingEar.Logger.parsing.info("🔇 Parsed ANC mode: \(String(describing: ancMode), privacy: .public)")
+                    Logger.parsing.info("🔇 Parsed ANC mode: \(String(describing: ancMode), privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("🔇 Failed to parse ANC mode")
+                    Logger.parsing.warning("🔇 Failed to parse ANC mode")
                 }
 
-            case NothingEar.BluetoothCommand.Response.spatialAudio:
+            case BluetoothCommand.Response.spatialAudio:
                 if let spatialAudioMode = response.parseSpatialAudioMode() {
                     self.spatialAudio = spatialAudioMode
                     callback.onUpdateSpatialAudio(spatialAudioMode)
-                    NothingEar.Logger.parsing.info("🎧 Parsed spatial audio mode: \(spatialAudioMode.displayName, privacy: .public)")
+                    Logger.parsing.info("🎧 Parsed spatial audio mode: \(spatialAudioMode.displayName, privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("🎧 Failed to parse spatial audio mode")
+                    Logger.parsing.warning("🎧 Failed to parse spatial audio mode")
                 }
 
-            case NothingEar.BluetoothCommand.Response.eqA,
-                NothingEar.BluetoothCommand.Response.eqB:
+            case BluetoothCommand.Response.eqA,
+                BluetoothCommand.Response.eqB:
                 if let eqPreset = response.parseEQPreset() {
                     self.eqPreset = eqPreset
                     callback.onUpdateEQPreset(eqPreset)
-                    NothingEar.Logger.parsing.info("🎵 Parsed EQ preset: \(String(describing: eqPreset), privacy: .public)")
+                    Logger.parsing.info("🎵 Parsed EQ preset: \(String(describing: eqPreset), privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("🎵 Failed to parse EQ preset")
+                    Logger.parsing.warning("🎵 Failed to parse EQ preset")
                 }
 
-            case NothingEar.BluetoothCommand.Response.inEarDetection:
+            case BluetoothCommand.Response.inEarDetection:
                 if let deviceInfo,
                    deviceInfo.model.supportsInEarDetection,
                    let inEarDetection = response.parseInEarDetection() {
                     updateDeviceSettings { settings in
                         settings.inEarDetection = inEarDetection
                     }
-                    NothingEar.Logger.parsing.info("👂 Parsed in-ear detection: \(inEarDetection ? "enabled" : "disabled", privacy: .public)")
+                    Logger.parsing.info("👂 Parsed in-ear detection: \(inEarDetection ? "enabled" : "disabled", privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("👂 Failed to parse in-ear detection or unsupported by device")
+                    Logger.parsing.warning("👂 Failed to parse in-ear detection or unsupported by device")
                 }
 
-            case NothingEar.BluetoothCommand.Response.lowLatency:
+            case BluetoothCommand.Response.lowLatency:
                 if let lowLatency = response.parseLowLatency() {
                     updateDeviceSettings { settings in
                         settings.lowLatency = lowLatency
                     }
-                    NothingEar.Logger.parsing.info("⚡ Parsed low latency: \(lowLatency ? "enabled" : "disabled", privacy: .public)")
+                    Logger.parsing.info("⚡ Parsed low latency: \(lowLatency ? "enabled" : "disabled", privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("⚡ Failed to parse low latency setting")
+                    Logger.parsing.warning("⚡ Failed to parse low latency setting")
                 }
 
-            case NothingEar.BluetoothCommand.Response.enhancedBass:
+            case BluetoothCommand.Response.enhancedBass:
                 if let enhancedBass = response.parseEnhancedBassSettings() {
                     self.enhancedBass = enhancedBass
                     callback.onUpdateEnhancedBass(enhancedBass)
-                    NothingEar.Logger.parsing.info("🎶 Parsed enhanced bass: \(enhancedBass.isEnabled ? "enabled" : "disabled", privacy: .public)")
+                    Logger.parsing.info("🎶 Parsed enhanced bass: \(enhancedBass.isEnabled ? "enabled" : "disabled", privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.warning("🎶 Failed to parse enhanced bass settings")
+                    Logger.parsing.warning("🎶 Failed to parse enhanced bass settings")
                 }
 
-            case NothingEar.BluetoothCommand.Response.gesture:
+            case BluetoothCommand.Response.gesture:
                 let gestures = response.parseGestures()
                 if !gestures.isEmpty {
-                    NothingEar.Logger.parsing.info("👆 Parsed gestures: \(gestures.count, privacy: .public) gesture(s)")
+                    Logger.parsing.info("👆 Parsed gestures: \(gestures.count, privacy: .public) gesture(s)")
                 } else {
-                    NothingEar.Logger.parsing.warning("👆 No gestures parsed from response")
+                    Logger.parsing.warning("👆 No gestures parsed from response")
                 }
 
-            case NothingEar.BluetoothCommand.Response.ringBuds:
+            case BluetoothCommand.Response.ringBuds:
                 if let ringBuds = response.parseRingBuds() {
                     self.ringBuds = ringBuds
                     callback.onUpdateRingBuds(ringBuds)
-                    NothingEar.Logger.parsing.info("🔔 Parsed ring buds: \(ringBuds.isOn ? "ringing" : "not ringing", privacy: .public)")
+                    Logger.parsing.info("🔔 Parsed ring buds: \(ringBuds.isOn ? "ringing" : "not ringing", privacy: .public)")
                 } else {
-                    NothingEar.Logger.parsing.info("🔔 ⚡ Failed to parse ring bugs")
+                    Logger.parsing.info("🔔 ⚡ Failed to parse ring bugs")
                 }
 
             default:
-                NothingEar.Logger.parsing.warning("❓ Unknown response: command = \(response.command, privacy: .public), payload = \(response.payload.map { String(format: "%02X", $0) } .joined(separator: " "), privacy: .public)")
+                Logger.parsing.warning("❓ Unknown response: command = \(response.command, privacy: .public), payload = \(response.payload.map { String(format: "%02X", $0) } .joined(separator: " "), privacy: .public)")
         }
     }
 
-    private func updateDeviceInfo(_ update: (inout NothingEar.DeviceInfo) -> Void) {
+    private func updateDeviceInfo(_ update: (inout DeviceInfo) -> Void) {
         if deviceInfo == nil {
             self.deviceInfo = .empty
         }
@@ -786,7 +783,7 @@ extension NothingEar.Device {
         update(&deviceInfo!)
     }
 
-    private func updateDeviceSettings(_ update: (inout NothingEar.DeviceSettings) -> Void) {
+    private func updateDeviceSettings(_ update: (inout DeviceSettings) -> Void) {
         if deviceSettings == nil {
             self.deviceSettings = .default
         }
@@ -798,7 +795,7 @@ extension NothingEar.Device {
         }
     }
 
-    private func error(from state: CBManagerState) -> NothingEar.ConnectionError? {
+    private func error(from state: CBManagerState) -> ConnectionError? {
         switch state {
             case .poweredOn:
                 nil
@@ -816,7 +813,7 @@ extension NothingEar.Device {
 
 // MARK: CBCentralManagerDelegate
 
-extension NothingEar.Device: CBCentralManagerDelegate {
+extension Device: CBCentralManagerDelegate {
 
     nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         Task { @MainActor in
@@ -836,7 +833,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         rssi RSSI: NSNumber
     ) {
         Task { @MainActor in
-            NothingEar.Logger.bluetooth.debug("🔍 Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) (RSSI: \(RSSI.intValue))")
+            Logger.bluetooth.debug("🔍 Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) (RSSI: \(RSSI.intValue))")
             callback.onDiscover(peripheral)
         }
     }
@@ -848,7 +845,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
         Task { @MainActor in
             connectionStatus = .connected
 
-            NothingEar.Logger.bluetooth.info("✅ Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
+            Logger.bluetooth.info("✅ Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
             peripheral.delegate = self
             peripheral.discoverServices(nil)
@@ -898,7 +895,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
             servicesToCheck = 0
             servicesChecked = 0
 
-            NothingEar.Logger.bluetooth.error("❌ Failed to connect to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
+            Logger.bluetooth.error("❌ Failed to connect to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
             if let error {
                 callback.onConnect(.failure(error))
@@ -933,7 +930,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
             servicesToCheck = 0
             servicesChecked = 0
 
-            NothingEar.Logger.bluetooth.info("❌ Disconnected from peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
+            Logger.bluetooth.info("❌ Disconnected from peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
             if let error {
                 callback.onDisconnect(.failure(error))
@@ -946,7 +943,7 @@ extension NothingEar.Device: CBCentralManagerDelegate {
 
 // MARK: CBPeripheralDelegate
 
-extension NothingEar.Device: CBPeripheralDelegate {
+extension Device: CBPeripheralDelegate {
 
     nonisolated public func peripheral(
         _ peripheral: CBPeripheral,
@@ -972,9 +969,9 @@ extension NothingEar.Device: CBPeripheralDelegate {
 
         // Log discovered services for debugging
         Task { @MainActor in
-            NothingEar.Logger.bluetooth.debug("🔍 Discovered \(servicesCount) service(s)")
+            Logger.bluetooth.debug("🔍 Discovered \(servicesCount) service(s)")
             for uuid in serviceUUIDs {
-                NothingEar.Logger.bluetooth.debug("  📦 Service: \(uuid, privacy: .public)")
+                Logger.bluetooth.debug("  📦 Service: \(uuid, privacy: .public)")
             }
         }
 
@@ -989,17 +986,17 @@ extension NothingEar.Device: CBPeripheralDelegate {
             servicesToCheck = proprietaryCandidates.count
             servicesChecked = 0
 
-            NothingEar.Logger.bluetooth.info("🎯 Found \(proprietaryCandidates.count) proprietary service candidate(s) after filtering")
+            Logger.bluetooth.info("🎯 Found \(proprietaryCandidates.count) proprietary service candidate(s) after filtering")
 
             if proprietaryCandidates.isEmpty {
-                NothingEar.Logger.bluetooth.error("❌ No proprietary services found")
+                Logger.bluetooth.error("❌ No proprietary services found")
                 callback.onError(.connectionFailed)
                 return
             }
 
             // Discover characteristics for each candidate service
             for service in proprietaryCandidates {
-                NothingEar.Logger.bluetooth.debug("🔍 Checking service: \(service.uuid.uuidString, privacy: .public)")
+                Logger.bluetooth.debug("🔍 Checking service: \(service.uuid.uuidString, privacy: .public)")
                 peripheral.discoverCharacteristics(nil, for: service)
             }
         }
@@ -1032,11 +1029,11 @@ extension NothingEar.Device: CBPeripheralDelegate {
         }
 
         Task { @MainActor in
-            NothingEar.Logger.bluetooth.debug("🔍 Discovered \(characteristicsCount) characteristic(s) for service \(serviceUUID, privacy: .public)")
+            Logger.bluetooth.debug("🔍 Discovered \(characteristicsCount) characteristic(s) for service \(serviceUUID, privacy: .public)")
 
             for charInfo in charInfos {
                 let propsDesc = describeProperties(charInfo.properties)
-                NothingEar.Logger.bluetooth.debug("  🔧 Characteristic: \(charInfo.uuid, privacy: .public) - \(propsDesc, privacy: .public)")
+                Logger.bluetooth.debug("  🔧 Characteristic: \(charInfo.uuid, privacy: .public) - \(propsDesc, privacy: .public)")
             }
 
             // Analyze this service as a candidate
@@ -1072,7 +1069,7 @@ extension NothingEar.Device: CBPeripheralDelegate {
             notifyChar: foundNotify
         )
 
-        NothingEar.Logger.bluetooth.debug("📊 Service \(service.uuid.uuidString, privacy: .public) score: \(score)")
+        Logger.bluetooth.debug("📊 Service \(service.uuid.uuidString, privacy: .public) score: \(score)")
 
         // If this service has both write and notify, consider it
         if let write = foundWrite, let notify = foundNotify {
@@ -1080,14 +1077,14 @@ extension NothingEar.Device: CBPeripheralDelegate {
             let shouldUseThisService = proprietaryService == nil || score >= getCurrentServiceScore()
 
             if shouldUseThisService {
-                NothingEar.Logger.bluetooth.info("✅ Selected service: \(service.uuid.uuidString, privacy: .public)")
+                Logger.bluetooth.info("✅ Selected service: \(service.uuid.uuidString, privacy: .public)")
 
                 proprietaryService = service
                 writeCharacteristic = write
                 notifyCharacteristic = notify
 
-                NothingEar.Logger.bluetooth.info("✍️ Write characteristic: \(write.uuid.uuidString, privacy: .public)")
-                NothingEar.Logger.bluetooth.info("🔔 Notify characteristic: \(notify.uuid.uuidString, privacy: .public)")
+                Logger.bluetooth.info("✍️ Write characteristic: \(write.uuid.uuidString, privacy: .public)")
+                Logger.bluetooth.info("🔔 Notify characteristic: \(notify.uuid.uuidString, privacy: .public)")
             }
         }
 
@@ -1164,7 +1161,7 @@ extension NothingEar.Device: CBPeripheralDelegate {
                let notify = notifyCharacteristic,
                let peripheral = connectedPeripheral {
 
-                NothingEar.Logger.bluetooth.info("🚀 Communication channels established with service \(service.uuid.uuidString, privacy: .public)")
+                Logger.bluetooth.info("🚀 Communication channels established with service \(service.uuid.uuidString, privacy: .public)")
 
                 // Enable notifications
                 peripheral.setNotifyValue(true, for: notify)
@@ -1172,7 +1169,7 @@ extension NothingEar.Device: CBPeripheralDelegate {
                 // Start device status refresh
                 refreshDeviceStatus()
             } else {
-                NothingEar.Logger.bluetooth.error("❌ Failed to find suitable proprietary service with write+notify characteristics")
+                Logger.bluetooth.error("❌ Failed to find suitable proprietary service with write+notify characteristics")
                 callback.onError(.connectionFailed)
             }
         }
@@ -1220,7 +1217,7 @@ extension NothingEar.Device: CBPeripheralDelegate {
 
 // MARK: Connection Error
 
-extension NothingEar.ConnectionError {
+extension ConnectionError {
 
     public var errorDescription: String? {
         switch self {
