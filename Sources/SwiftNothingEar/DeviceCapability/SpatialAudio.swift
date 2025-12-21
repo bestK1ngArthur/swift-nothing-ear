@@ -64,4 +64,26 @@ extension SpatialAudioMode: DeviceCapability {
                 []
         }
     }
+
+    public static func isCompatibleWithEnhancedBass(by model: DeviceModel) -> Bool {
+        switch model {
+            case .cmfBudsPro,
+                 .cmfBuds,
+                 .cmfBuds2,
+                 .cmfBudsPro2,
+                 .cmfNeckbandPro,
+                 .cmfHeadphonePro:
+                true
+
+            case .ear1,
+                 .ear2,
+                 .ear3,
+                 .earStick,
+                 .earOpen,
+                 .ear,
+                 .earA,
+                 .headphone1:
+                false
+        }
+    }
 }
