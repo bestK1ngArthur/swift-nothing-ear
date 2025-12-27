@@ -177,4 +177,11 @@ final class CMFBuds2Tests: XCTestCase {
         XCTAssertEqual(ringBuds?.bud, .left)
         XCTAssertEqual(ringBuds?.isOn, true)
     }
+
+    func testModelDetectionByNameAndSerial() {
+        let serial = "SH009901000000"
+
+        XCTAssertEqual(DeviceModel.getModel(from: serial), .cmfBuds2(.darkGrey))
+        XCTAssertEqual(DeviceModel.getModel(for: "CMF Buds 2", serialNumber: serial), .cmfBuds2(.darkGrey))
+    }
 }

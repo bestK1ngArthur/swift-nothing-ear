@@ -141,4 +141,11 @@ final class NothingEarStickTests: XCTestCase {
         XCTAssertEqual(ringBuds?.bud, .left)
         XCTAssertEqual(ringBuds?.isOn, true)
     }
+
+    func testModelDetectionByNameAndSerial() {
+        let serial = "MA0000220000"
+
+        XCTAssertEqual(DeviceModel.getModel(from: serial), .earStick)
+        XCTAssertEqual(DeviceModel.getModel(for: "Nothing Ear (stick)", serialNumber: serial), .earStick)
+    }
 }

@@ -176,4 +176,16 @@ final class NothingHeadphone1Tests: XCTestCase {
         XCTAssertEqual(ringBuds?.bud, .unibody)
         XCTAssertEqual(ringBuds?.isOn, true)
     }
+
+    func testModelDetectionByNameAndSerial() {
+        let cases: [(String, DeviceModel)] = [
+            ("M3A603000000", .headphone1(.black)),
+            ("M3A606000000", .headphone1(.grey))
+        ]
+
+        for (serial, expected) in cases {
+            XCTAssertEqual(DeviceModel.getModel(from: serial), expected)
+            XCTAssertEqual(DeviceModel.getModel(for: "Nothing Headphone (1)", serialNumber: serial), expected)
+        }
+    }
 }

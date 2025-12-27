@@ -177,4 +177,17 @@ final class CMFNeckbandProTests: XCTestCase {
         XCTAssertEqual(ringBuds?.bud, .left)
         XCTAssertEqual(ringBuds?.isOn, false)
     }
+
+    func testModelDetectionByNameAndSerial() {
+        let cases: [(String, DeviceModel)] = [
+            ("SH005001000000", .cmfNeckbandPro(.black)),
+            ("SH004901000000", .cmfNeckbandPro(.white)),
+            ("SH004801000000", .cmfNeckbandPro(.orange))
+        ]
+
+        for (serial, expected) in cases {
+            XCTAssertEqual(DeviceModel.getModel(from: serial), expected)
+            XCTAssertEqual(DeviceModel.getModel(for: "CMF Neckband Pro", serialNumber: serial), expected)
+        }
+    }
 }

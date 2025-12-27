@@ -177,4 +177,16 @@ final class NothingEar2Tests: XCTestCase {
         XCTAssertEqual(ringBuds?.bud, .right)
         XCTAssertEqual(ringBuds?.isOn, false)
     }
+
+    func testModelDetectionByNameAndSerial() {
+        let cases: [(String, DeviceModel)] = [
+            ("SH001701000000", .ear2(.white)),
+            ("SH002701000000", .ear2(.black))
+        ]
+
+        for (serial, expected) in cases {
+            XCTAssertEqual(DeviceModel.getModel(from: serial), expected)
+            XCTAssertEqual(DeviceModel.getModel(for: "Nothing Ear (2)", serialNumber: serial), expected)
+        }
+    }
 }
