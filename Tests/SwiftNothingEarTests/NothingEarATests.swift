@@ -1,26 +1,26 @@
 import XCTest
 @testable import SwiftNothingEar
 
-final class NothingEarTests: XCTestCase {
+final class NothingEarATests: XCTestCase {
 
     func testBattery() {
-        let model = DeviceModel.ear(.white)
+        let model = DeviceModel.earA(.yellow)
 
         let batteryRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.battery, payload: [], operationID: 0x01)
         XCTAssertEqual(batteryRequest.toBytes(), [0x55, 0x60, 0x01, 0x07, 0xC0, 0x00, 0x00, 0x01, 0xAC, 0xDF])
 
         let batteryResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x07, 0x40, 0x07, 0x00, 0x01,
-            0x03, 0x04, 0xB2, 0x02, 0x3C, 0x03, 0x3A
+            0x03, 0x04, 0x2D, 0x02, 0x41, 0x03, 0xBC
         ]
         guard let batteryResponse = BluetoothResponse(data: batteryResponseBytes) else {
             XCTFail("Failed to parse battery response")
             return
         }
         if case .budsWithCase(let caseLevel, let left, let right) = batteryResponse.parseBattery(model: model) {
-            XCTAssertEqual(caseLevel.level, 50)
-            XCTAssertEqual(left.level, 60)
-            XCTAssertEqual(right.level, 58)
+            XCTAssertEqual(caseLevel.level, 45)
+            XCTAssertEqual(left.level, 65)
+            XCTAssertEqual(right.level, 60)
         } else {
             XCTFail("Expected budsWithCase battery")
         }
@@ -32,13 +32,13 @@ final class NothingEarTests: XCTestCase {
 
         let ancResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1E, 0x40, 0x02, 0x00, 0x01,
-            0x00, 0x03
+            0x00, 0x07
         ]
         guard let ancResponse = BluetoothResponse(data: ancResponseBytes) else {
             XCTFail("Failed to parse ANC response")
             return
         }
-        XCTAssertEqual(ancResponse.parseANCMode(), .active(.low))
+        XCTAssertEqual(ancResponse.parseANCMode(), .transparent)
     }
 
     func testEnhancedBass() {
@@ -47,7 +47,7 @@ final class NothingEarTests: XCTestCase {
 
         let enhancedBassResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x4E, 0x40, 0x02, 0x00, 0x01,
-            0x01, 0x6E
+            0x01, 0x46
         ]
         guard let enhancedBassResponse = BluetoothResponse(data: enhancedBassResponseBytes) else {
             XCTFail("Failed to parse enhanced bass response")
@@ -55,7 +55,7 @@ final class NothingEarTests: XCTestCase {
         }
         let enhancedBass = enhancedBassResponse.parseEnhancedBassSettings()
         XCTAssertEqual(enhancedBass?.isEnabled, true)
-        XCTAssertEqual(enhancedBass?.level, 55)
+        XCTAssertEqual(enhancedBass?.level, 35)
     }
 
     func testEQPreset() {
@@ -64,13 +64,13 @@ final class NothingEarTests: XCTestCase {
 
         let eqResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
-            0x06
+            0x01
         ]
         guard let eqResponse = BluetoothResponse(data: eqResponseBytes) else {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .advanced)
+        XCTAssertEqual(eqResponse.parseEQPreset(), .voice)
     }
 
     func testInEarDetection() {
@@ -79,13 +79,13 @@ final class NothingEarTests: XCTestCase {
 
         let inEarResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x0E, 0x40, 0x03, 0x00, 0x01,
-            0x01, 0x01, 0x01
+            0x01, 0x01, 0x00
         ]
         guard let inEarResponse = BluetoothResponse(data: inEarResponseBytes) else {
             XCTFail("Failed to parse in-ear response")
             return
         }
-        XCTAssertEqual(inEarResponse.parseInEarDetection(), true)
+        XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
     }
 
     func testLowLatency() {
@@ -94,13 +94,13 @@ final class NothingEarTests: XCTestCase {
 
         let latencyResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x41, 0x40, 0x01, 0x00, 0x01,
-            0x00
+            0x01
         ]
         guard let latencyResponse = BluetoothResponse(data: latencyResponseBytes) else {
             XCTFail("Failed to parse low latency response")
             return
         }
-        XCTAssertEqual(latencyResponse.parseLowLatency(), false)
+        XCTAssertEqual(latencyResponse.parseLowLatency(), true)
     }
 
     func testGestures() {
@@ -109,7 +109,7 @@ final class NothingEarTests: XCTestCase {
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
-            0x01, 0x03, 0x00, 0x03, 0x04
+            0x01, 0x02, 0x00, 0x02, 0x05
         ]
         guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
             XCTFail("Failed to parse gesture response")
@@ -117,9 +117,9 @@ final class NothingEarTests: XCTestCase {
         }
         let gestures = gestureResponse.parseGestures()
         XCTAssertEqual(gestures.count, 1)
-        XCTAssertEqual(gestures.first?.device, .right)
-        XCTAssertEqual(gestures.first?.type, .trippleTap)
-        XCTAssertEqual(gestures.first?.action, .volumeUp)
+        XCTAssertEqual(gestures.first?.device, .left)
+        XCTAssertEqual(gestures.first?.type, .doubleTap)
+        XCTAssertEqual(gestures.first?.action, .volumeDown)
     }
 
     func testRingBuds() {
@@ -128,14 +128,14 @@ final class NothingEarTests: XCTestCase {
 
         let ringBudsResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x02, 0x40, 0x03, 0x00, 0x01,
-            0x00, 0x01, 0x01
+            0x00, 0x06, 0x00
         ]
         guard let ringBudsResponse = BluetoothResponse(data: ringBudsResponseBytes) else {
             XCTFail("Failed to parse ring buds response")
             return
         }
         let ringBuds = ringBudsResponse.parseRingBuds()
-        XCTAssertEqual(ringBuds?.bud, .left)
-        XCTAssertEqual(ringBuds?.isOn, true)
+        XCTAssertEqual(ringBuds?.bud, .unibody)
+        XCTAssertEqual(ringBuds?.isOn, false)
     }
 }
