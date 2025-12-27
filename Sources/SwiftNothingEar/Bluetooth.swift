@@ -27,11 +27,11 @@ enum BluetoothCommand {
         static let anc: UInt16             = 61455 // 0xF00F
         static let customEQ: UInt16        = 61505 // 0xF061
         static let earFitTest: UInt16      = 61460 // 0xF014
-        static let enhancedBass: UInt16    = 61521 // 0xF071
+        static let enhancedBass: UInt16    = 61521 // 0xF051
         static let eq: UInt16              = 61456 // 0xF010
         static let gesture: UInt16         = 61443 // 0xF003
         static let inEarDetection: UInt16  = 61444 // 0xF004
-        static let lowLatency: UInt16      = 61504 // 0xF060
+        static let lowLatency: UInt16      = 61504 // 0xF040
         static let ledCaseColor: UInt16    = 61453 // 0xF00D
         static let listeningMode: UInt16   = 61469 // 0xF01D
         static let personalizedANC: UInt16 = 61457 // 0xF011
