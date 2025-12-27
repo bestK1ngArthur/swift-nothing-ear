@@ -523,8 +523,18 @@ extension BluetoothResponse {
     }
 
     func parseSpatialAudioMode() -> SpatialAudioMode? {
-        guard payload.count >= 2 else {
+        guard !payload.isEmpty else {
             return nil
+        }
+
+        if payload.count == 1 {
+            // CMF may report spatial audio mode as a single byte
+            switch payload[0] {
+                case 0x00: return .off
+                case 0x01: return .fixed
+                case 0x02: return .headTracking
+                default: return nil
+            }
         }
 
         let firstByte = payload[0]
