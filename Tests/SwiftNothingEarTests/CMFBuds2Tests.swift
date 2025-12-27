@@ -45,15 +45,15 @@ final class CMFBuds2Tests: XCTestCase {
     }
 
     func testSpatialAudio() {
-        let spatialRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.spatialAudio, payload: [], operationID: 0x01)
-        XCTAssertEqual(spatialRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xC0, 0x00, 0x00, 0x01, 0x4C, 0xD1])
+        let spatialRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.spatialAudio, payload: [], operationID: 0x0B)
+        XCTAssertEqual(spatialRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xC0, 0x00, 0x00, 0x0B, 0xCC, 0xD6])
 
         let spatialWriteRequest = BluetoothRequest.setSpatialAudioMode(.fixed, operationID: 0x01)
         XCTAssertEqual(spatialWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x44, 0x3D])
 
         let spatialResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x4F, 0x40, 0x01, 0x00, 0x01,
-            0x01
+            0x55, 0x60, 0x01, 0x4F, 0x40, 0x01, 0x00, 0x0B,
+            0x01, 0x17, 0xB7
         ]
         guard let spatialResponse = BluetoothResponse(data: spatialResponseBytes) else {
             XCTFail("Failed to parse spatial audio response")
