@@ -29,6 +29,9 @@ final class NothingHeadphone1Tests: XCTestCase {
         let ancRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.anc, payload: [], operationID: 0x01)
         XCTAssertEqual(ancRequest.toBytes(), [0x55, 0x60, 0x01, 0x1E, 0xC0, 0x00, 0x00, 0x01, 0xB1, 0x1D])
 
+        let ancWriteRequest = BluetoothRequest.setANCMode(.active(.high), operationID: 0x01)
+        XCTAssertEqual(ancWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x0F, 0xF0, 0x03, 0x00, 0x01, 0x01, 0x01, 0x00, 0xF9, 0xD7])
+
         let ancResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1E, 0x40, 0x02, 0x00, 0x01,
             0x00, 0x01
@@ -44,6 +47,9 @@ final class NothingHeadphone1Tests: XCTestCase {
         let spatialRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.spatialAudio, payload: [], operationID: 0x01)
         XCTAssertEqual(spatialRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xC0, 0x00, 0x00, 0x01, 0x4C, 0xD1])
 
+        let spatialWriteRequest = BluetoothRequest.setSpatialAudioMode(.headTracking, operationID: 0x01)
+        XCTAssertEqual(spatialWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x01, 0x85, 0xFD])
+
         let spatialResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x4F, 0x40, 0x02, 0x00, 0x01,
             0x01, 0x01
@@ -58,6 +64,9 @@ final class NothingHeadphone1Tests: XCTestCase {
     func testEnhancedBass() {
         let enhancedBassRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.enhancedBass, payload: [], operationID: 0x01)
         XCTAssertEqual(enhancedBassRequest.toBytes(), [0x55, 0x60, 0x01, 0x4E, 0xC0, 0x00, 0x00, 0x01, 0x71, 0x11])
+
+        let enhancedBassWriteRequest = BluetoothRequest.setEnhancedBass(.init(isEnabled: true, level: 25), operationID: 0x01)
+        XCTAssertEqual(enhancedBassWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x71, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x32, 0xD7, 0x2A])
 
         let enhancedBassResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x4E, 0x40, 0x02, 0x00, 0x01,
@@ -76,6 +85,9 @@ final class NothingHeadphone1Tests: XCTestCase {
         let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.eq, payload: [], operationID: 0x01)
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
 
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreBass, operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0x27, 0x59])
+
         let eqResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
             0x03
@@ -90,6 +102,9 @@ final class NothingHeadphone1Tests: XCTestCase {
     func testInEarDetection() {
         let inEarRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.inEarDetection, payload: [], operationID: 0x01)
         XCTAssertEqual(inEarRequest.toBytes(), [0x55, 0x60, 0x01, 0x0E, 0xC0, 0x00, 0x00, 0x01, 0x70, 0xDE])
+
+        let inEarWriteRequest = BluetoothRequest.setInEarDetection(true, operationID: 0x01)
+        XCTAssertEqual(inEarWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x04, 0xF0, 0x03, 0x00, 0x01, 0x01, 0x01, 0x01, 0x79, 0xA4])
 
         let inEarResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x0E, 0x40, 0x03, 0x00, 0x01,
@@ -106,6 +121,9 @@ final class NothingHeadphone1Tests: XCTestCase {
         let latencyRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.lowLatency, payload: [], operationID: 0x01)
         XCTAssertEqual(latencyRequest.toBytes(), [0x55, 0x60, 0x01, 0x41, 0xC0, 0x00, 0x00, 0x01, 0x25, 0x10])
 
+        let latencyWriteRequest = BluetoothRequest.setLowLatency(true, operationID: 0x01)
+        XCTAssertEqual(latencyWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x60, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x57, 0xFE])
+
         let latencyResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x41, 0x40, 0x01, 0x00, 0x01,
             0x01
@@ -120,6 +138,9 @@ final class NothingHeadphone1Tests: XCTestCase {
     func testGestures() {
         let gestureRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.gesture, payload: [], operationID: 0x01)
         XCTAssertEqual(gestureRequest.toBytes(), [0x55, 0x60, 0x01, 0x18, 0xC0, 0x00, 0x00, 0x01, 0x39, 0x1D])
+
+        let gestureWriteRequest = BluetoothRequest.setGesture(.init(type: .longPress, action: .ancToggle, device: .right), operationID: 0x01)
+        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x0B, 0x07, 0x54, 0x91])
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
@@ -139,6 +160,9 @@ final class NothingHeadphone1Tests: XCTestCase {
     func testRingBuds() {
         let ringBudsRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.ringBuds, payload: [], operationID: 0x01)
         XCTAssertEqual(ringBudsRequest.toBytes(), [0x55, 0x60, 0x01, 0x02, 0xC0, 0x00, 0x00, 0x01, 0x60, 0xDF])
+
+        let ringBudsWriteRequest = BluetoothRequest.setRingBuds(.init(isOn: true, bud: .unibody), operationID: 0x01)
+        XCTAssertEqual(ringBudsWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x02, 0xF0, 0x02, 0x00, 0x01, 0x06, 0x01, 0xD7, 0xC8])
 
         let ringBudsResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x02, 0x40, 0x03, 0x00, 0x01,
