@@ -1,7 +1,7 @@
 import Foundation
 
 /// Supported Nothing Ear device models
-public enum DeviceModel: Sendable {
+public enum DeviceModel: Sendable, Equatable {
     case ear1(Ear1)                       // Nothing Ear (1)
     case ear2(Ear2)                       // Nothing Ear (2)
     case ear3(Ear3)                       // Nothing Ear (3)
@@ -20,69 +20,69 @@ public enum DeviceModel: Sendable {
 
 extension DeviceModel {
 
-    public enum Ear1: Sendable {
+    public enum Ear1: Sendable, Equatable {
         case black
         case white
     }
 
-    public enum Ear2: Sendable {
+    public enum Ear2: Sendable, Equatable {
         case black
         case white
     }
 
-    public enum Ear3: Sendable {
+    public enum Ear3: Sendable, Equatable {
         case black
         case white
     }
 
-    public enum Ear: Sendable {
+    public enum Ear: Sendable, Equatable {
         case black
         case white
     }
 
-    public enum EarA: Sendable {
+    public enum EarA: Sendable, Equatable {
         case black
         case white
         case yellow
     }
 
-    public enum Headphone1: Sendable {
+    public enum Headphone1: Sendable, Equatable {
         case black
         case grey
     }
 
-    public enum CMFBudsPro: Sendable {
+    public enum CMFBudsPro: Sendable, Equatable {
         case orange
         case white
         case black
     }
 
-    public enum CMFBuds: Sendable {
+    public enum CMFBuds: Sendable, Equatable {
         case black
         case orange
         case white
     }
 
-    public enum CMFBuds2: Sendable {
+    public enum CMFBuds2: Sendable, Equatable {
         case lightGreen
         case orange
         case darkGrey
     }
 
-    public enum CMFBudsPro2: Sendable {
+    public enum CMFBudsPro2: Sendable, Equatable {
         case black
         case blue
         case orange
         case white
     }
 
-    public enum CMFNeckbandPro: Sendable {
+    public enum CMFNeckbandPro: Sendable, Equatable {
         case black
         case orange
         case white
     }
 
-    public enum CMFHeadphonePro: Sendable {
+    public enum CMFHeadphonePro: Sendable, Equatable {
         case lightGreen
         case lightGrey
         case darkGrey
