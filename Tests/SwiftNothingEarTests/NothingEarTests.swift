@@ -7,38 +7,38 @@ final class NothingEarTests: XCTestCase {
 
     func testNothingEarModelProperties() {
         // Test ANC support
-        XCTAssertTrue(Model.ear1(.white).supportsANC)
-        XCTAssertTrue(Model.ear2(.white).supportsANC)
-        XCTAssertTrue(Model.ear3(.white).supportsANC)
-        XCTAssertFalse(Model.earStick.supportsANC)
-        XCTAssertFalse(Model.earOpen.supportsANC)
+        XCTAssertTrue(DeviceModel.ear1(.white).supportsNoiseCancellation)
+        XCTAssertTrue(DeviceModel.ear2(.white).supportsNoiseCancellation)
+        XCTAssertTrue(DeviceModel.ear3(.white).supportsNoiseCancellation)
+        XCTAssertFalse(DeviceModel.earStick.supportsNoiseCancellation)
+        XCTAssertFalse(DeviceModel.earOpen.supportsNoiseCancellation)
 
-        // Test Custom EQ support
-        XCTAssertTrue(Model.ear1(.white).supportsCustomEQ)
-        XCTAssertTrue(Model.ear2(.white).supportsCustomEQ)
-        XCTAssertTrue(Model.ear3(.white).supportsCustomEQ)
-        XCTAssertFalse(Model.earStick.supportsCustomEQ)
+        // Test Spatial Audio support
+        XCTAssertTrue(DeviceModel.ear1(.white).supportsSpatialAudio)
+        XCTAssertTrue(DeviceModel.ear2(.white).supportsSpatialAudio)
+        XCTAssertFalse(DeviceModel.earStick.supportsSpatialAudio)
+        XCTAssertFalse(DeviceModel.cmfBuds(.black).supportsSpatialAudio)
 
         // Test Enhanced Bass support
-        XCTAssertTrue(Model.ear(.white).supportsEnhancedBass)
-        XCTAssertTrue(Model.cmfBudsPro2(.white).supportsEnhancedBass)
-        XCTAssertTrue(Model.cmfBuds2(.darkGrey).supportsEnhancedBass)
-        XCTAssertFalse(Model.ear1(.white).supportsEnhancedBass)
-        XCTAssertFalse(Model.ear2(.white).supportsEnhancedBass)
-        XCTAssertFalse(Model.ear3(.white).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.ear(.white).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.cmfBudsPro2(.white).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.cmfBuds2(.darkGrey).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.ear1(.white).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.ear2(.white).supportsEnhancedBass)
+        XCTAssertTrue(DeviceModel.ear3(.white).supportsEnhancedBass)
 
         // Test display names
-        XCTAssertEqual(Model.ear1(.white).displayName, "Nothing Ear (1)")
-        XCTAssertEqual(Model.ear2(.white).displayName, "Nothing Ear (2)")
-        XCTAssertEqual(Model.ear3(.white).displayName, "Nothing Ear (3)")
-        XCTAssertEqual(Model.cmfBudsPro(.white).displayName, "CMF Buds Pro")
-        XCTAssertEqual(Model.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
+        XCTAssertEqual(DeviceModel.ear1(.white).displayName, "Nothing Ear (1)")
+        XCTAssertEqual(DeviceModel.ear2(.white).displayName, "Nothing Ear (2)")
+        XCTAssertEqual(DeviceModel.ear3(.white).displayName, "Nothing Ear (3)")
+        XCTAssertEqual(DeviceModel.cmfBudsPro(.white).displayName, "CMF Buds Pro")
+        XCTAssertEqual(DeviceModel.cmfBuds2(.darkGrey).displayName, "CMF Buds 2")
     }
 
     func testEar3SerialNumberDetection() {
         // Test real serial number for white ear3
         let whiteEar3Serial = "SH10252535010003"
-        let detectedModel = Model.getModel(from: whiteEar3Serial)
+        let detectedModel = DeviceModel.getModel(from: whiteEar3Serial)
 
         XCTAssertNotNil(detectedModel)
         if case .ear3(let color) = detectedModel {
@@ -49,7 +49,7 @@ final class NothingEarTests: XCTestCase {
 
         // Test hypothetical black ear3 serial
         let blackEar3Serial = "SH10262635010003"
-        let detectedBlackModel = Model.getModel(from: blackEar3Serial)
+        let detectedBlackModel = DeviceModel.getModel(from: blackEar3Serial)
 
         XCTAssertNotNil(detectedBlackModel)
         if case .ear3(let color) = detectedBlackModel {
@@ -86,20 +86,31 @@ final class NothingEarTests: XCTestCase {
 
     func testANCModeMapping() {
         // Test display names
-        XCTAssertEqual(ANCMode.off.displayName, "Off")
-        XCTAssertEqual(ANCMode.transparent.displayName, "Transparency")
-        XCTAssertEqual(ANCMode.noiseCancellation(.high).displayName, "Noise Cancellation")
+        XCTAssertEqual(NoiseCancellationMode.off.displayName, "Off")
+        XCTAssertEqual(NoiseCancellationMode.transparent.displayName, "Transparency")
+        XCTAssertEqual(NoiseCancellationMode.active(.high).displayName, "Active")
 
         // Test raw value conversion
-        XCTAssertEqual(ANCMode.off.rawValue8, 0x05)
-        XCTAssertEqual(ANCMode.transparent.rawValue8, 0x07)
-        XCTAssertEqual(ANCMode.noiseCancellation(.high).rawValue8, 0x01)
+        XCTAssertEqual(NoiseCancellationMode.off.rawValue8, 0x05)
+        XCTAssertEqual(NoiseCancellationMode.transparent.rawValue8, 0x07)
+        XCTAssertEqual(NoiseCancellationMode.active(.high).rawValue8, 0x01)
 
         // Test reverse conversion
-        XCTAssertEqual(ANCMode.from8BitValue(0x05), .off)
-        XCTAssertEqual(ANCMode.from8BitValue(0x07), .transparent)
-        XCTAssertEqual(ANCMode.from8BitValue(0x01), .noiseCancellation(.high))
-        XCTAssertNil(ANCMode.from8BitValue(0xFF))
+        XCTAssertEqual(NoiseCancellationMode.from8BitValue(0x05), .off)
+        XCTAssertEqual(NoiseCancellationMode.from8BitValue(0x07), .transparent)
+        XCTAssertEqual(NoiseCancellationMode.from8BitValue(0x01), .active(.high))
+        XCTAssertNil(NoiseCancellationMode.from8BitValue(0xFF))
+    }
+
+    func testSpatialAudioParsingSupportsSingleBytePayload() {
+        let rawResponse: [UInt8] = [0x55, 0x60, 0x01, 0x4F, 0x40, 0x01, 0x00, 0x0B, 0x01, 0x17, 0xB7]
+        guard let response = BluetoothResponse(data: rawResponse) else {
+            XCTFail("Failed to parse spatial audio response")
+            return
+        }
+
+        XCTAssertEqual(response.payload, [0x01])
+        XCTAssertEqual(response.parseSpatialAudioMode(), .fixed)
     }
 
     func testEQPreset() {
@@ -156,16 +167,16 @@ final class NothingEarTests: XCTestCase {
     }
 
     func testEnhancedBassSettings() {
-        let bass1 = EnhancedBassSettings(isEnabled: true, level: 50)
+        let bass1 = EnhancedBass(isEnabled: true, level: 50)
         XCTAssertTrue(bass1.isEnabled)
         XCTAssertEqual(bass1.level, 50)
 
         // Test different settings
-        let bass2 = EnhancedBassSettings(isEnabled: false, level: 100)
+        let bass2 = EnhancedBass(isEnabled: false, level: 100)
         XCTAssertFalse(bass2.isEnabled)
         XCTAssertEqual(bass2.level, 100)
 
-        let bass3 = EnhancedBassSettings(isEnabled: true, level: 0)
+        let bass3 = EnhancedBass(isEnabled: true, level: 0)
         XCTAssertTrue(bass3.isEnabled)
         XCTAssertEqual(bass3.level, 0)
     }
