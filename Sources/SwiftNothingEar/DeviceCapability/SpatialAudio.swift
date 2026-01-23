@@ -1,9 +1,11 @@
 import Foundation
 
-public enum SpatialAudioMode: CaseIterable, Hashable, Sendable {
+public enum SpatialAudioMode: Hashable, Sendable {
     case off
     case fixed
     case headTracking
+    case cinema
+    case concert
 }
 
 extension SpatialAudioMode {
@@ -13,6 +15,8 @@ extension SpatialAudioMode {
             case .off: "Off"
             case .fixed: "Fixed"
             case .headTracking: "Head-tracking"
+            case .cinema: "Cinema"
+            case .concert: "Concert"
         }
     }
 }
@@ -49,18 +53,20 @@ extension SpatialAudioMode: DeviceCapability {
             case .ear1,
                  .ear2,
                  .ear3,
-                 .cmfBudsPro,
                  .cmfBuds2,
                  .cmfBudsPro2,
-                 .cmfNeckbandPro,
-                 .cmfHeadphonePro: // TODO: Add concert/cinema mode
+                 .cmfNeckbandPro:
                 [.off, .fixed]
+
+            case .cmfHeadphonePro:
+                [.off, .cinema, .concert]
 
             case .earStick,
                 .earOpen,
                 .ear,
                 .earA,
-                .cmfBuds:
+                .cmfBuds,
+                .cmfBudsPro:
                 []
         }
     }

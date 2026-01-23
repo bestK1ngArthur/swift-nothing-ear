@@ -44,10 +44,12 @@ final class CMFHeadphoneProTests: XCTestCase {
     }
 
     func testSpatialAudio() {
+        let model = DeviceModel.cmfHeadphonePro(.darkGrey)
+
         let spatialRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.spatialAudio, payload: [], operationID: 0x01)
         XCTAssertEqual(spatialRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xC0, 0x00, 0x00, 0x01, 0x4C, 0xD1])
 
-        let spatialWriteRequest = BluetoothRequest.setSpatialAudioMode(.fixed, operationID: 0x01)
+        let spatialWriteRequest = BluetoothRequest.setSpatialAudioMode(.cinema, operationID: 0x01)
         XCTAssertEqual(spatialWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x44, 0x3D])
 
         let spatialResponseBytes: [UInt8] = [
@@ -58,7 +60,7 @@ final class CMFHeadphoneProTests: XCTestCase {
             XCTFail("Failed to parse spatial audio response")
             return
         }
-        XCTAssertEqual(spatialResponse.parseSpatialAudioMode(), .fixed)
+        XCTAssertEqual(spatialResponse.parseSpatialAudioMode(model: model), .cinema)
     }
 
     func testEnhancedBass() {

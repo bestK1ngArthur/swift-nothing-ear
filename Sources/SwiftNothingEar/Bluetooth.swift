@@ -522,17 +522,19 @@ extension BluetoothResponse {
         return .init(isEnabled: enabled, level: level)
     }
 
-    func parseSpatialAudioMode() -> SpatialAudioMode? {
+    func parseSpatialAudioMode(model: DeviceModel? = nil) -> SpatialAudioMode? {
         guard !payload.isEmpty else {
             return nil
         }
+
+        let isCMFHeadphonePro = if case .cmfHeadphonePro = model { true } else { false }
 
         if payload.count == 1 {
             // CMF may report spatial audio mode as a single byte
             switch payload[0] {
                 case 0x00: return .off
-                case 0x01: return .fixed
-                case 0x02: return .headTracking
+                case 0x01: return isCMFHeadphonePro ? .cinema : .fixed
+                case 0x02: return isCMFHeadphonePro ? .concert : .headTracking
                 default: return nil
             }
         }
@@ -542,8 +544,8 @@ extension BluetoothResponse {
 
         switch (firstByte, secondByte) {
             case (0x00, 0x00): return .off
-            case (0x01, 0x00): return .fixed
-            case (0x01, 0x01): return .headTracking
+            case (0x01, 0x00): return isCMFHeadphonePro ? .cinema : .fixed
+            case (0x01, 0x01): return isCMFHeadphonePro ? .concert : .headTracking
             default: return nil
         }
     }
@@ -607,6 +609,8 @@ extension SpatialAudioMode {
             case .off: return (0x00, 0x00)
             case .fixed: return (0x01, 0x00)
             case .headTracking: return (0x01, 0x01)
+            case .cinema: return (0x01, 0x00)
+            case .concert: return (0x01, 0x01)
         }
     }
 
