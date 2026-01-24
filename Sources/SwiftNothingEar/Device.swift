@@ -473,7 +473,8 @@ extension Device {
             sendReadBatteryRequest,
             sendReadGestureRequest,
             sendReadSpatialAudioRequest,
-            sendReadRingBudsRequest
+            sendReadRingBudsRequest,
+            sendReadCustomEQRequest
         ]
 
         runTasks(tasks, delay: 0.1)
@@ -532,6 +533,24 @@ extension Device {
             : BluetoothCommand.RequestRead.eq
         let request = BluetoothRequest(
             command: command,
+            payload: [],
+            operationID: nextOperationID()
+        )
+        sendRequest(request)
+    }
+
+    private func sendReadCustomEQRequest() {
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsCustomEQ
+        else {
+            return
+        }
+
+        Logger.bluetooth.debug("🎛️ Sending read custom EQ request")
+
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.customEQ,
             payload: [],
             operationID: nextOperationID()
         )
