@@ -184,4 +184,12 @@ final class CMFBuds2Tests: XCTestCase {
         XCTAssertEqual(DeviceModel.getModel(from: serial), .cmfBuds2(.darkGrey))
         XCTAssertEqual(DeviceModel.getModel(for: "CMF Buds 2", serialNumber: serial), .cmfBuds2(.darkGrey))
     }
+
+    func testCustomEQPreset() {
+        let model = DeviceModel.cmfBuds2(.darkGrey)
+        let preset = EQPresetCustom(bass: 6, mid: 0, treble: -3)
+
+        assertCustomEQWrite(for: model, preset: preset)
+        assertCustomEQRead(preset: preset)
+    }
 }

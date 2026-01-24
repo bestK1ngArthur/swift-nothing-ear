@@ -188,4 +188,12 @@ final class NothingHeadphone1Tests: XCTestCase {
             XCTAssertEqual(DeviceModel.getModel(for: "Nothing Headphone (1)", serialNumber: serial), expected)
         }
     }
+
+    func testCustomEQPreset() {
+        let model = DeviceModel.headphone1(.black)
+        let preset = EQPresetCustom(bass: 6, mid: 0, treble: -3)
+
+        assertCustomEQWrite(for: model, preset: preset)
+        assertCustomEQRead(preset: preset)
+    }
 }

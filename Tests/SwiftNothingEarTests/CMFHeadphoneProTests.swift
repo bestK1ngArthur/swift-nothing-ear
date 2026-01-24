@@ -191,4 +191,12 @@ final class CMFHeadphoneProTests: XCTestCase {
             XCTAssertEqual(DeviceModel.getModel(for: "CMF Headphone Pro", serialNumber: serial), expected)
         }
     }
+
+    func testCustomEQPreset() {
+        let model = DeviceModel.cmfHeadphonePro(.darkGrey)
+        let preset = EQPresetCustom(bass: 6, mid: 0, treble: -3)
+
+        assertCustomEQWrite(for: model, preset: preset)
+        assertCustomEQRead(preset: preset)
+    }
 }
