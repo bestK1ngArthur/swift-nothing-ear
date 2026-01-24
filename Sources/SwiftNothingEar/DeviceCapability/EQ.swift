@@ -10,9 +10,16 @@ public enum EQPreset: CaseIterable, Sendable {
 }
 
 public struct EQPresetCustom: Sendable {
-    public let lowFrequency: Float  // Usually ~100Hz
-    public let midFrequency: Float  // Usually ~1kHz
-    public let highFrequency: Float // Usually ~10kHz
+
+    public let bass: Int   // Range: -6...6
+    public let mid: Int    // Range: -6...6
+    public let treble: Int // Range: -6...6
+
+    public init(bass: Int, mid: Int, treble: Int) {
+        self.bass = bass
+        self.mid = mid
+        self.treble = treble
+    }
 }
 
 extension EQPreset {

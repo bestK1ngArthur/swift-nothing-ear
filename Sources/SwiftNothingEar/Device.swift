@@ -43,6 +43,7 @@ public struct Callback {
     let onUpdateSpatialAudio: (SpatialAudioMode?) -> Void
     let onUpdateEnhancedBass: (EnhancedBass?) -> Void
     let onUpdateEQPreset: (EQPreset?) -> Void
+    let onUpdateEQPresetCustom: (EQPresetCustom?) -> Void
     let onUpdateDeviceSettings: (DeviceSettings) -> Void
     let onUpdateRingBuds: (RingBuds) -> Void
 
@@ -57,6 +58,7 @@ public struct Callback {
         onUpdateSpatialAudio: @escaping (SpatialAudioMode?) -> Void,
         onUpdateEnhancedBass: @escaping (EnhancedBass?) -> Void,
         onUpdateEQPreset: @escaping (EQPreset?) -> Void,
+        onUpdateEQPresetCustom: @escaping (EQPresetCustom?) -> Void = { _ in },
         onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
         onUpdateRingBuds: @escaping (RingBuds) -> Void,
         onError: @escaping (ConnectionError) -> Void
@@ -69,6 +71,7 @@ public struct Callback {
         self.onUpdateSpatialAudio = onUpdateSpatialAudio
         self.onUpdateEnhancedBass = onUpdateEnhancedBass
         self.onUpdateEQPreset = onUpdateEQPreset
+        self.onUpdateEQPresetCustom = onUpdateEQPresetCustom
         self.onUpdateDeviceSettings = onUpdateDeviceSettings
         self.onUpdateRingBuds = onUpdateRingBuds
         self.onError = onError
@@ -87,6 +90,7 @@ public final class Device: NSObject {
     public private(set) var ancMode: NoiseCancellationMode?
     public private(set) var enhancedBass: EnhancedBass?
     public private(set) var eqPreset: EQPreset?
+    public private(set) var eqPresetCustom: EQPresetCustom?
     public private(set) var spatialAudio: SpatialAudioMode?
     public private(set) var ringBuds: RingBuds?
 
@@ -705,6 +709,15 @@ extension Device {
                     Logger.parsing.info("🎵 Parsed EQ preset: \(String(describing: eqPreset), privacy: .public)")
                 } else {
                     Logger.parsing.warning("🎵 Failed to parse EQ preset")
+                }
+
+            case BluetoothCommand.Response.customEQ:
+                if let customEQ = response.parseCustomEQPreset() {
+                    self.eqPresetCustom = customEQ
+                    callback.onUpdateEQPresetCustom(customEQ)
+                    Logger.parsing.info("🎛️ Parsed custom EQ: bass=\(customEQ.bass, privacy: .public), mid=\(customEQ.mid, privacy: .public), treble=\(customEQ.treble, privacy: .public)")
+                } else {
+                    Logger.parsing.warning("🎛️ Failed to parse custom EQ")
                 }
 
             case BluetoothCommand.Response.inEarDetection:

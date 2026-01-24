@@ -381,6 +381,43 @@ extension BluetoothResponse {
         }
     }
 
+    func parseCustomEQPreset() -> EQPresetCustom? {
+        // Offsets are based on Nothing's custom EQ payload layout.
+        let bassOffset = 6
+        let midOffset = 19
+        let trebleOffset = 32
+
+        func readFloat(at offset: Int) -> Float? {
+            guard payload.count >= offset + 4 else {
+                return nil
+            }
+
+            let raw = UInt32(payload[offset])
+                | (UInt32(payload[offset + 1]) << 8)
+                | (UInt32(payload[offset + 2]) << 16)
+                | (UInt32(payload[offset + 3]) << 24)
+            return Float(bitPattern: raw)
+        }
+
+        guard
+            let bassValue = readFloat(at: bassOffset),
+            let midValue = readFloat(at: midOffset),
+            let trebleValue = readFloat(at: trebleOffset)
+        else {
+            return nil
+        }
+
+        func clamp(_ value: Int, min: Int, max: Int) -> Int {
+            Swift.max(min, Swift.min(max, value))
+        }
+
+        return EQPresetCustom(
+            bass: clamp(Int(bassValue.rounded()), min: -6, max: 6),
+            mid: clamp(Int(midValue.rounded()), min: -6, max: 6),
+            treble: clamp(Int(trebleValue.rounded()), min: -6, max: 6)
+        )
+    }
+
     func parseGestures() -> [Gesture] {
         guard payload.count >= 1 else {
             return []
