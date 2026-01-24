@@ -157,6 +157,14 @@ extension DeviceModel {
         EnhancedBass.isSupported(by: self)
     }
 
+    public var supportsEQ: Bool {
+        EQPreset.isSupported(by: self)
+    }
+
+    public var supportsCustomEQ: Bool {
+        EQPreset.allSupported(by: self).contains(.custom)
+    }
+
     public var supportsRingBuds: Bool {
         RingBuds.isSupported(by: self)
     }

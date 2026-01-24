@@ -25,7 +25,7 @@ enum BluetoothCommand {
     enum RequestWrite {
         static let advancedEQ: UInt16      = 61519 // 0xF06F
         static let anc: UInt16             = 61455 // 0xF00F
-        static let customEQ: UInt16        = 61505 // 0xF061
+        static let customEQ: UInt16        = 61505 // 0xF041
         static let earFitTest: UInt16      = 61460 // 0xF014
         static let enhancedBass: UInt16    = 61521 // 0xF051
         static let eq: UInt16              = 61456 // 0xF010
@@ -230,6 +230,19 @@ extension BluetoothRequest {
         )
     }
 
+    static func setCustomEQPreset(
+        _ preset: EQPresetCustom,
+        specs: EQPresetCustomSpecs,
+        operationID: UInt8
+    ) -> Self {
+        let payload = Self.encodeCustomEQPayload(preset, spec: specs)
+        return Self(
+            command: BluetoothCommand.RequestWrite.customEQ,
+            payload: payload,
+            operationID: operationID
+        )
+    }
+
     static func setGesture(
         _ gesture: Gesture,
         operationID: UInt8
@@ -300,6 +313,105 @@ extension BluetoothRequest {
             payload: payload,
             operationID: operationID
         )
+    }
+}
+
+// MARK: Custom EQ Helpers
+
+private extension BluetoothRequest {
+
+    struct EQBand {
+        let filterType: UInt8
+        let gain: Float
+        let frequency: Float
+        let quality: Float
+    }
+
+    static func encodeCustomEQPayload(
+        _ preset: EQPresetCustom,
+        spec: EQPresetCustomSpecs
+    ) -> [UInt8] {
+        func clamp(_ value: Int) -> Int {
+            Swift.max(-6, Swift.min(6, value))
+        }
+
+        func floatBytes(_ value: Float) -> [UInt8] {
+            let raw = value.bitPattern.littleEndian
+            return [
+                UInt8(raw & 0xFF),
+                UInt8((raw >> 8) & 0xFF),
+                UInt8((raw >> 16) & 0xFF),
+                UInt8((raw >> 24) & 0xFF)
+            ]
+        }
+
+        let midGain = Float(clamp(preset.mid))
+        let trebleGain = Float(clamp(preset.treble))
+        let bassGain = Float(clamp(preset.bass))
+
+        let eqBands: [EQBand] = [
+            EQBand(
+                filterType: 0x01, // PEAK
+                gain: midGain,
+                frequency: spec.freqPeak,
+                quality: spec.qPeak
+            ),
+            EQBand(
+                filterType: 0x02, // HIGH_SHELF
+                gain: trebleGain,
+                frequency: spec.freqHigh,
+                quality: spec.qHigh
+            ),
+            EQBand(
+                filterType: 0x00, // LOW_SHELF
+                gain: bassGain,
+                frequency: spec.freqLow,
+                quality: spec.qLow
+            )
+        ]
+
+        var maxGain: Float = 0.0
+        for band in eqBands where band.gain > maxGain {
+            maxGain = band.gain
+        }
+        let totalGain = -maxGain
+
+        let packetSize = 1 + 4 + (eqBands.count * 16) + (eqBands.count * 3)
+        var packet = [UInt8](repeating: 0, count: packetSize)
+        var offset = 0
+
+        packet[offset] = UInt8(eqBands.count)
+        offset += 1
+
+        let totalGainBytes = floatBytes(totalGain)
+        packet[offset..<(offset + 4)] = totalGainBytes[0..<4]
+        offset += 4
+
+        for band in eqBands {
+            packet[offset] = band.filterType
+            offset += 1
+
+            let gainBytes = floatBytes(band.gain)
+            packet[offset..<(offset + 4)] = gainBytes[0..<4]
+            offset += 4
+
+            let freqBytes = floatBytes(band.frequency)
+            packet[offset..<(offset + 4)] = freqBytes[0..<4]
+            offset += 4
+
+            let qBytes = floatBytes(band.quality)
+            packet[offset..<(offset + 4)] = qBytes[0..<4]
+            offset += 4
+        }
+
+        for _ in eqBands {
+            packet[offset] = 0x00
+            packet[offset + 1] = 0x00
+            packet[offset + 2] = 0x00
+            offset += 3
+        }
+
+        return packet
     }
 }
 

@@ -261,12 +261,42 @@ extension Device {
             return
         }
 
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsEQ
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setEQPreset(
                 preset,
                 operationID: nextOperationID()
             )
         )
+    }
+
+    public func setCustomEQPreset(_ preset: EQPresetCustom) {
+        guard isConnected else {
+            callback.onError(.connectionFailed)
+            return
+        }
+
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsCustomEQ
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
+        let request = BluetoothRequest.setCustomEQPreset(
+            preset,
+            specs: deviceInfo.model.eqPresetCustomSpecs,
+            operationID: nextOperationID()
+        )
+        sendRequest(request)
     }
 
     public func setInEarDetection(_ isEnabled: Bool) {
