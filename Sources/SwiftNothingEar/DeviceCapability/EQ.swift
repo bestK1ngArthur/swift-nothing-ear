@@ -68,7 +68,7 @@ extension DeviceModel {
 
 // MARK: Custom EQ
 
-public struct EQPresetCustom: Sendable {
+public struct EQPresetCustom: Equatable, Sendable {
 
     public let bass: Int   // Range: -6...6
     public let mid: Int    // Range: -6...6
