@@ -526,8 +526,8 @@ extension Device {
     private func sendReadEQRequest() {
         Logger.bluetooth.debug("🎵 Sending read EQ request")
 
-        let isListeningModeSupported = deviceInfo?.model.isListeningModeSupported ?? false
-        let command = isListeningModeSupported
+        let supportsListeningMode = deviceInfo?.model.supportsListeningMode ?? false
+        let command = supportsListeningMode
             ? BluetoothCommand.RequestRead.listeningMode
             : BluetoothCommand.RequestRead.eq
         let request = BluetoothRequest(

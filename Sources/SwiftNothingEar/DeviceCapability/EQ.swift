@@ -56,7 +56,7 @@ extension EQPreset: DeviceCapability {
 
 extension DeviceModel {
 
-    var isListeningModeSupported: Bool {
+    var supportsListeningMode: Bool {
         switch self {
             case .cmfBuds, .cmfBuds2, .cmfBudsPro2:
                 return true
