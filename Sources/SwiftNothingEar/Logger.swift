@@ -26,9 +26,9 @@ extension Logger {
 
         switch direction {
         case .outgoing:
-            bluetooth.debug("📤 Raw request: [\(hexString, privacy: .public)]")
+            bluetooth.info("📤 Raw request: [\(hexString, privacy: .public)]")
         case .incoming:
-            bluetooth.debug("📥 Raw response: [\(hexString, privacy: .public)]")
+            bluetooth.info("📥 Raw response: [\(hexString, privacy: .public)]")
         }
     }
 
