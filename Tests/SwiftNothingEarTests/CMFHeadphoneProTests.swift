@@ -44,23 +44,24 @@ final class CMFHeadphoneProTests: XCTestCase {
     }
 
     func testSpatialAudio() {
-        let model = DeviceModel.cmfHeadphonePro(.darkGrey)
-
         let spatialRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.spatialAudio, payload: [], operationID: 0x01)
         XCTAssertEqual(spatialRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xC0, 0x00, 0x00, 0x01, 0x4C, 0xD1])
 
         let spatialWriteRequest = BluetoothRequest.setSpatialAudioMode(.cinema, operationID: 0x01)
-        XCTAssertEqual(spatialWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x44, 0x3D])
+        XCTAssertEqual(spatialWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0x45, 0x5D])
+
+        let spatialConcertWriteRequest = BluetoothRequest.setSpatialAudioMode(.concert, operationID: 0x01)
+        XCTAssertEqual(spatialConcertWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x52, 0xF0, 0x02, 0x00, 0x01, 0x02, 0x00, 0x44, 0xCD])
 
         let spatialResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x4F, 0x40, 0x01, 0x00, 0x01,
-            0x01
+            0x55, 0x60, 0x01, 0x4F, 0x40, 0x02, 0x00, 0x01,
+            0x03, 0x00
         ]
         guard let spatialResponse = BluetoothResponse(data: spatialResponseBytes) else {
             XCTFail("Failed to parse spatial audio response")
             return
         }
-        XCTAssertEqual(spatialResponse.parseSpatialAudioMode(model: model), .cinema)
+        XCTAssertEqual(spatialResponse.parseSpatialAudioMode(), .cinema)
     }
 
     func testEnhancedBass() {

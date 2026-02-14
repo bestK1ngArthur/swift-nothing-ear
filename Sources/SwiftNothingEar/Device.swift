@@ -742,7 +742,7 @@ extension Device {
                 }
 
             case BluetoothCommand.Response.spatialAudio:
-                if let spatialAudioMode = response.parseSpatialAudioMode(model: deviceInfo?.model) {
+                if let spatialAudioMode = response.parseSpatialAudioMode() {
                     self.spatialAudio = spatialAudioMode
                     callback.onUpdateSpatialAudio(spatialAudioMode)
                     Logger.parsing.info("🎧 Parsed spatial audio mode: \(spatialAudioMode.displayName, privacy: .public)")
