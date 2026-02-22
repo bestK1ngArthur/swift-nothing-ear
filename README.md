@@ -24,6 +24,7 @@ Special credits to:
 - 🟡 [CMF Buds](Docs/cmf_buds.md)
 - 🟡 [CMF Buds 2a](Docs/cmf_buds_2a.md)
 - 🟢 [CMF Buds 2](Docs/cmf_buds_2.md)
+- 🟡 [CMF Buds 2 Plus](Docs/cmf_buds_2_plus.md)
 - 🟡 [CMF Buds Pro](Docs/cmf_buds_pro.md)
 - 🟢 [CMF Buds Pro 2](Docs/cmf_buds_pro_2.md)
 - 🟡 [CMF Neckband Pro](Docs/cmf_neckband_pro.md)

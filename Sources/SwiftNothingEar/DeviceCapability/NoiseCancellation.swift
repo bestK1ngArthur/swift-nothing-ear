@@ -55,6 +55,7 @@ extension NoiseCancellationMode: DeviceCapability {
                  .cmfBudsPro,
                  .cmfBuds2a,
                  .cmfBuds2,
+                 .cmfBuds2Plus,
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
                  .cmfHeadphonePro:

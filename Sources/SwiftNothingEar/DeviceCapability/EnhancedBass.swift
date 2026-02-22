@@ -25,6 +25,7 @@ extension EnhancedBass: DeviceCapability {
                  .cmfBuds,
                  .cmfBuds2a,
                  .cmfBuds2,
+                 .cmfBuds2Plus,
                  .cmfBudsPro,
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
