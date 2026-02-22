@@ -12,6 +12,7 @@ public enum DeviceModel: Sendable, Equatable {
     case headphone1(Headphone1)           // Nothing Headphone (1)
     case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
     case cmfBuds(CMFBuds)                 // CMF Buds
+    case cmfBuds2a(CMFBuds2a)             // CMF Buds 2a
     case cmfBuds2(CMFBuds2)               // CMF Buds 2
     case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
     case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
@@ -69,6 +70,12 @@ extension DeviceModel {
         case darkGrey
     }
 
+    public enum CMFBuds2a: Sendable, Equatable {
+        case lightGrey
+        case orange
+        case darkGrey
+    }
+
     public enum CMFBudsPro2: Sendable, Equatable {
         case black
         case blue
@@ -100,6 +107,7 @@ extension DeviceModel {
             case .headphone1: return "Nothing Headphone (1)"
             case .cmfBudsPro: return "CMF Buds Pro"
             case .cmfBuds: return "CMF Buds"
+            case .cmfBuds2a: return "CMF Buds 2a"
             case .cmfBuds2: return "CMF Buds 2"
             case .cmfBudsPro2: return "CMF Buds Pro 2"
             case .cmfNeckbandPro: return "CMF Neckband Pro"
@@ -119,6 +127,7 @@ extension DeviceModel {
             case .headphone1: "B170"
             case .cmfBudsPro: "B163"
             case .cmfBuds: "B168"
+            case .cmfBuds2a: "B185"
             case .cmfBuds2: "B188"
             case .cmfBudsPro2: "B172"
             case .cmfNeckbandPro: "B164"
@@ -130,6 +139,7 @@ extension DeviceModel {
         switch self {
             case .cmfBudsPro,
                   .cmfBuds,
+                  .cmfBuds2a,
                   .cmfBuds2,
                   .cmfBudsPro2,
                   .cmfNeckbandPro,
@@ -187,6 +197,7 @@ extension DeviceModel {
             case "Nothing Headphone (1)": .headphone1(.black)
             case "CMF Buds Pro": .cmfBudsPro(.black)
             case "CMF Buds": .cmfBuds(.black)
+            case "CMF Buds 2A", "CMF Buds 2a": .cmfBuds2a(.darkGrey)
             case "CMF Buds 2": .cmfBuds2(.darkGrey)
             case "CMF Buds Pro 2": .cmfBudsPro2(.black)
             case "CMF Neckband Pro": .cmfNeckbandPro(.black)
@@ -348,6 +359,7 @@ extension DeviceModel {
             case (.headphone1, .headphone1): true
             case (.cmfBudsPro, .cmfBudsPro): true
             case (.cmfBuds, .cmfBuds): true
+            case (.cmfBuds2a, .cmfBuds2a): true
             case (.cmfBuds2, .cmfBuds2): true
             case (.cmfBudsPro2, .cmfBudsPro2): true
             case (.cmfNeckbandPro, .cmfNeckbandPro): true

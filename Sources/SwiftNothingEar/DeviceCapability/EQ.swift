@@ -40,6 +40,7 @@ extension EQPreset: DeviceCapability {
                  .earA,
                  .headphone1,
                  .cmfBuds,
+                 .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBudsPro,
                  .cmfBudsPro2, // TODO: Add genre presets
@@ -58,7 +59,7 @@ extension DeviceModel {
 
     var supportsListeningMode: Bool {
         switch self {
-            case .cmfBuds, .cmfBuds2, .cmfBudsPro2:
+            case .cmfBuds, .cmfBuds2a, .cmfBuds2, .cmfBudsPro2:
                 return true
             default:
                 return false
@@ -145,6 +146,7 @@ extension DeviceModel {
                 return spec3400
 
             case .cmfBuds,
+                 .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBudsPro2,
                  .cmfNeckbandPro:

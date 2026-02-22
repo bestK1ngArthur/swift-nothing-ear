@@ -40,6 +40,7 @@ extension SpatialAudioMode: DeviceCapability {
                 .earOpen,
                 .ear,
                 .earA,
+                .cmfBuds2a,
                 .cmfBuds:
                 false
         }
@@ -65,6 +66,7 @@ extension SpatialAudioMode: DeviceCapability {
                 .earOpen,
                 .ear,
                 .earA,
+                .cmfBuds2a,
                 .cmfBuds,
                 .cmfBudsPro:
                 []
@@ -75,6 +77,7 @@ extension SpatialAudioMode: DeviceCapability {
         switch model {
             case .cmfBudsPro,
                  .cmfBuds,
+                 .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
