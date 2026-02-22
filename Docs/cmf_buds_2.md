@@ -2,7 +2,7 @@
 
 ## Device Information
 
-- **Model Code**: `B188`
+- **Model Code**: `B179`
 - **Display Name**: CMF Buds 2
 - **Available Colors**: Light Green, Orange, Dark Grey
 - **Device Type**: True wireless earbuds

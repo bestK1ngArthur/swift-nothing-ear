@@ -2,7 +2,7 @@
 
 ## Device Information
 
-- **Model Code**: `B182`
+- **Model Code**: `B174`
 - **Display Name**: Nothing Ear (open)
 - **Device Type**: Open-ear wireless earbuds
 

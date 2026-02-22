@@ -2,7 +2,7 @@
 
 ## Device Information
 
-- **Model Code**: `B156` 
+- **Model Code**: `B173`
 - **Display Name**: Nothing Ear (3)
 - **Device Type**: True wireless earbuds
 
