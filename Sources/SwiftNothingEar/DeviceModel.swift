@@ -206,23 +206,23 @@ extension DeviceModel {
     static func getModel(for deviceName: String, serialNumber: String) -> Self? {
         // Try to detect model by name without color
         let modelByName: Self? = switch deviceName {
-            case "Nothing Ear (1)": .ear1(.black)
-            case "Nothing Ear (2)": .ear2(.black)
-            case "Nothing Ear (3)": .ear3(.black)
-            case "Nothing Ear (stick)": .earStick
-            case "Nothing Ear (open)": .earOpen
+            case "Nothing ear (1)": .ear1(.black)
+            case "Ear (Stick)": .earStick
+            case "Ear (2)": .ear2(.black)
             case "Nothing Ear": .ear(.black)
             case "Nothing Ear (a)": .earA(.black)
-            case "Nothing Headphone (1)": .headphone1(.black)
-            case "Nothing Headphone (A)", "Nothing Headphone (a)": .headphoneA(.black)
-            case "CMF Buds Pro": .cmfBudsPro(.black)
+            case "Nothing Ear (open)": .earOpen
+            case "Buds Pro": .cmfBudsPro(.black)
+            case "Neckband Pro": .cmfNeckbandPro(.black)
             case "CMF Buds": .cmfBuds(.black)
-            case "CMF Buds 2A", "CMF Buds 2a": .cmfBuds2a(.darkGrey)
+            case "CMF Buds Pro 2": .cmfBudsPro2(.black)
             case "CMF Buds 2": .cmfBuds2(.darkGrey)
             case "CMF Buds 2 Plus": .cmfBuds2Plus(.lightGrey)
-            case "CMF Buds Pro 2": .cmfBudsPro2(.black)
-            case "CMF Neckband Pro": .cmfNeckbandPro(.black)
+            case "CMF Buds 2a": .cmfBuds2a(.darkGrey)
+            case "Nothing Headphone (1)": .headphone1(.black)
+            case "Nothing Ear (3)": .ear3(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
+            case "Nothing Headphone (a)": .headphoneA(.black)
             default: nil
         }
 

@@ -19,11 +19,6 @@ final class NothingHeadphoneATests: XCTestCase {
             DeviceModel.getModel(for: "Nothing Headphone (a)", serialNumber: unknownSerial),
             .headphoneA(.black)
         )
-        XCTAssertEqual(
-            DeviceModel.getModel(for: "Nothing Headphone (A)", serialNumber: unknownSerial),
-            .headphoneA(.black)
-        )
-        XCTAssertNil(DeviceModel.getModel(for: "Headphone (a)", serialNumber: unknownSerial))
     }
 
     func testModelDetectionPrefersNameWhenSerialHasDifferentModel() {

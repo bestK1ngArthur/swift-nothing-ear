@@ -19,10 +19,6 @@ final class CMFBuds2aTests: XCTestCase {
             DeviceModel.getModel(for: "CMF Buds 2a", serialNumber: unknownSerial),
             .cmfBuds2a(.darkGrey)
         )
-        XCTAssertEqual(
-            DeviceModel.getModel(for: "CMF Buds 2A", serialNumber: unknownSerial),
-            .cmfBuds2a(.darkGrey)
-        )
     }
 
     func testCapabilities() {
