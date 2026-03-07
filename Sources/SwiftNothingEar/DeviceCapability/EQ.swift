@@ -39,6 +39,7 @@ extension EQPreset: DeviceCapability {
                  .ear,
                  .earA,
                  .headphone1,
+                 .headphoneA,
                  .cmfBuds,
                  .cmfBuds2a,
                  .cmfBuds2,
@@ -131,6 +132,7 @@ extension DeviceModel {
 
         switch self {
             case .headphone1,
+                 .headphoneA,
                  .cmfHeadphonePro:
                 return spec3500
 

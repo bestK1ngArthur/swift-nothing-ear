@@ -22,6 +22,7 @@ extension EnhancedBass: DeviceCapability {
                  .earA,
                  .earStick,
                  .headphone1,
+                 .headphoneA,
                  .cmfBuds,
                  .cmfBuds2a,
                  .cmfBuds2,

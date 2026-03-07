@@ -10,6 +10,7 @@ public enum DeviceModel: Sendable, Equatable {
     case ear(Ear)                         // Nothing Ear
     case earA(EarA)                       // Nothing Ear (a)
     case headphone1(Headphone1)           // Nothing Headphone (1)
+    case headphoneA(HeadphoneA)           // Nothing Headphone (a)
     case cmfBudsPro(CMFBudsPro)           // CMF Buds Pro
     case cmfBuds(CMFBuds)                 // CMF Buds
     case cmfBuds2a(CMFBuds2a)             // CMF Buds 2a
@@ -51,6 +52,13 @@ extension DeviceModel {
     public enum Headphone1: Sendable, Equatable {
         case black
         case grey
+    }
+
+    public enum HeadphoneA: Sendable, Equatable {
+        case black
+        case white
+        case yellow
+        case pink
     }
 
     public enum CMFBudsPro: Sendable, Equatable {
@@ -111,6 +119,7 @@ extension DeviceModel {
             case .ear: return "Nothing Ear"
             case .earA: return "Nothing Ear (a)"
             case .headphone1: return "Nothing Headphone (1)"
+            case .headphoneA: return "Nothing Headphone (a)"
             case .cmfBudsPro: return "CMF Buds Pro"
             case .cmfBuds: return "CMF Buds"
             case .cmfBuds2a: return "CMF Buds 2a"
@@ -132,6 +141,7 @@ extension DeviceModel {
             case .ear: "B171"
             case .earA: "B162"
             case .headphone1: "B170"
+            case .headphoneA: "B186"
             case .cmfBudsPro: "B163"
             case .cmfBuds: "B168"
             case .cmfBuds2a: "B185"
@@ -204,6 +214,7 @@ extension DeviceModel {
             case "Nothing Ear": .ear(.black)
             case "Nothing Ear (a)": .earA(.black)
             case "Nothing Headphone (1)": .headphone1(.black)
+            case "Nothing Headphone (A)", "Nothing Headphone (a)": .headphoneA(.black)
             case "CMF Buds Pro": .cmfBudsPro(.black)
             case "CMF Buds": .cmfBuds(.black)
             case "CMF Buds 2A", "CMF Buds 2a": .cmfBuds2a(.darkGrey)
@@ -367,6 +378,7 @@ extension DeviceModel {
             case (.ear, .ear): true
             case (.earA, .earA): true
             case (.headphone1, .headphone1): true
+            case (.headphoneA, .headphoneA): true
             case (.cmfBudsPro, .cmfBudsPro): true
             case (.cmfBuds, .cmfBuds): true
             case (.cmfBuds2a, .cmfBuds2a): true

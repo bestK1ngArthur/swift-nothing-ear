@@ -425,7 +425,7 @@ extension BluetoothResponse {
         }
 
         switch model {
-        case .headphone1, .cmfHeadphonePro:
+        case .headphone1, .headphoneA, .cmfHeadphonePro:
             // Expect exactly 3 bytes: [header, ?, batteryData]
             guard payload.count == 3 else {
                 return nil
