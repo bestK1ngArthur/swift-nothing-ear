@@ -189,6 +189,26 @@ final class NothingHeadphone1Tests: XCTestCase {
         }
     }
 
+    func testDeviceConfigParsesSerialAndMirroredBluetoothAddress() {
+        let payloadText = """
+        6,1,
+        6,2,1.0.1.81
+        6,4,M3A6TEST1234567
+        6,6,112233AABBCC
+        """
+        let payload = Array(payloadText.utf8)
+        var responseBytes: [UInt8] = [0x55, 0x60, 0x01, 0x06, 0x40, UInt8(payload.count), 0x00, 0x01]
+        responseBytes.append(contentsOf: payload)
+
+        guard let response = BluetoothResponse(data: responseBytes) else {
+            XCTFail("Failed to parse serial/config response")
+            return
+        }
+
+        XCTAssertEqual(response.parseSerialNumber(), "M3A6TEST1234567")
+        XCTAssertEqual(response.parseBluetoothAddress(), "CC:BB:AA:33:22:11")
+    }
+
     func testCustomEQPreset() {
         let model = DeviceModel.headphone1(.black)
         let preset = EQPresetCustom(bass: 6, mid: 0, treble: -3)

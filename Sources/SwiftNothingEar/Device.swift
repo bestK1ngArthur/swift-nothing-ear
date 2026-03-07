@@ -3,10 +3,6 @@ import Combine
 import Foundation
 import os.log
 
-#if os(macOS)
-import IOBluetooth
-#endif
-
 public enum ConnectionStatus: Sendable {
     case disconnected
     case scanning
@@ -683,14 +679,22 @@ extension Device {
         switch response.command {
             case BluetoothCommand.Response.serialNumber:
                 let deviceName = connectedPeripheral?.name ?? "Unknown"
+                let bluetoothAddress = response.parseBluetoothAddress()
                 if let serialNumber = response.parseSerialNumber(),
                    let detectedModel = DeviceModel.getModel(for: deviceName, serialNumber: serialNumber) {
                     updateDeviceInfo { deviceInfo in
                         deviceInfo.model = detectedModel
                         deviceInfo.serialNumber = serialNumber
+                        if let bluetoothAddress {
+                            deviceInfo.bluetoothAddress = bluetoothAddress
+                        }
                     }
                     hasReceivedSerialNumber = true
-                    Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
+                    if let bluetoothAddress {
+                        Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public), bt=\(bluetoothAddress, privacy: .public)")
+                    } else {
+                        Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
+                    }
 
                     // Check if we can complete the initial connection
                     completeInitialConnection()
@@ -894,22 +898,6 @@ extension Device: CBCentralManagerDelegate {
 
             peripheral.delegate = self
             peripheral.discoverServices(nil)
-
-            #if os(macOS)
-            // Get bluetooth address from IOBluetooth
-            if let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] {
-                for bluetoothDevice in paired where bluetoothDevice.name == peripheral.name {
-                    if let address = bluetoothDevice.addressString {
-                        let bluetoothAddress = address
-                            .replacingOccurrences(of: "-", with: ":")
-                            .uppercased()
-                        updateDeviceInfo { deviceInfo in
-                            deviceInfo.bluetoothAddress = bluetoothAddress
-                        }
-                    }
-                }
-            }
-            #endif
         }
     }
 

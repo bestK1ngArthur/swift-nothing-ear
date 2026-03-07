@@ -565,13 +565,14 @@ extension BluetoothResponse {
         return String(bytes: payload, encoding: .utf8) ?? ""
     }
 
-    func parseSerialNumber() -> String? {
-        func extractSerial(from bytes: [UInt8]) -> String? {
+    private func parseDeviceConfigEntries() -> [(index: Int, type: Int, value: String)] {
+        func extractEntries(from bytes: [UInt8]) -> [(index: Int, type: Int, value: String)] {
             guard let configText = String(bytes: bytes, encoding: .utf8) else {
-                return nil
+                return []
             }
 
             let lines = configText.components(separatedBy: .newlines)
+            var entries: [(index: Int, type: Int, value: String)] = []
 
             for line in lines {
                 let parts = line.split(
@@ -590,18 +591,16 @@ extension BluetoothResponse {
 
                 guard
                     !valuePart.isEmpty,
-                    Int(indexPart) != nil,
+                    let index = Int(indexPart),
                     let type = Int(typePart)
                 else {
                     continue
                 }
 
-                if type == 4 {
-                    return valuePart
-                }
+                entries.append((index, type, valuePart))
             }
 
-            return nil
+            return entries
         }
 
         func sanitizePayload(_ bytes: [UInt8]) -> [UInt8] {
@@ -633,10 +632,45 @@ extension BluetoothResponse {
             ].filter { !$0.isEmpty }
 
             for candidate in variations {
-                if let serial = extractSerial(from: candidate) {
-                    return serial
+                let entries = extractEntries(from: candidate)
+                if !entries.isEmpty {
+                    return entries
                 }
             }
+        }
+
+        return []
+    }
+
+    func parseSerialNumber() -> String? {
+        for entry in parseDeviceConfigEntries() where entry.type == 4 {
+            return entry.value
+        }
+
+        return nil
+    }
+
+    func parseBluetoothAddress() -> String? {
+        for entry in parseDeviceConfigEntries() where entry.type == 6 {
+            let sanitized = entry.value.uppercased()
+            guard
+                sanitized.count == 12,
+                sanitized.allSatisfy(\.isHexDigit)
+            else {
+                continue
+            }
+
+            var bytes: [String] = []
+            bytes.reserveCapacity(6)
+
+            var index = sanitized.startIndex
+            while index < sanitized.endIndex {
+                let nextIndex = sanitized.index(index, offsetBy: 2)
+                bytes.append(String(sanitized[index..<nextIndex]))
+                index = nextIndex
+            }
+
+            return bytes.reversed().joined(separator: ":")
         }
 
         return nil
