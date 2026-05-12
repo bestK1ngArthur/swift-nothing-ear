@@ -6,7 +6,7 @@ public enum DeviceModel: Sendable, Equatable {
     case ear2(Ear2)                       // Nothing Ear (2)
     case ear3(Ear3)                       // Nothing Ear (3)
     case earStick                         // Nothing Ear (stick)
-    case earOpen                          // Nothing Ear (open)
+    case earOpen(EarOpen)                 // Nothing Ear (open)
     case ear(Ear)                         // Nothing Ear
     case earA(EarA)                       // Nothing Ear (a)
     case headphone1(Headphone1)           // Nothing Headphone (1)
@@ -41,6 +41,11 @@ extension DeviceModel {
     public enum Ear: Sendable, Equatable {
         case black
         case white
+    }
+
+    public enum EarOpen: Sendable, Equatable {
+        case white
+        case blue
     }
 
     public enum EarA: Sendable, Equatable {
@@ -211,7 +216,7 @@ extension DeviceModel {
             case "Ear (2)": .ear2(.black)
             case "Nothing Ear": .ear(.black)
             case "Nothing Ear (a)": .earA(.black)
-            case "Nothing Ear (open)": .earOpen
+            case "Nothing Ear (open)": .earOpen(.white)
             case "Buds Pro": .cmfBudsPro(.black)
             case "Neckband Pro": .cmfNeckbandPro(.black)
             case "CMF Buds": .cmfBuds(.black)
@@ -303,7 +308,7 @@ extension DeviceModel {
             case "14", "15", "16":
                 .earStick
             case "11200005":
-                .earOpen
+                .earOpen(.white)
             case "17", "18", "19":
                 .ear2(.white)
             case "27", "28", "29":

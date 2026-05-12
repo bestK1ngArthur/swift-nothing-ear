@@ -4,6 +4,7 @@
 
 - **Model Code**: `B174`
 - **Display Name**: Nothing Ear (open)
+- **Available Colors**: White, Blue
 - **Device Type**: Open-ear wireless earbuds
 
 ## Features
