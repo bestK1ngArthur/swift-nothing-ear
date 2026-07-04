@@ -207,6 +207,17 @@ extension Device {
         centralManager.cancelPeripheralConnection(connectedPeripheral)
     }
 
+    /// Sets the effective model for this `Device` instance only.
+    ///
+    /// The override is not persisted by SwiftNothingEar. Clients that let users
+    /// correct device detection should store that selection themselves and
+    /// reapply it after reconnecting.
+    public func setEffectiveModelOverride(_ model: DeviceModel) {
+        updateDeviceInfo { deviceInfo in
+            deviceInfo.model = model
+        }
+    }
+
     public func setNoiseCancellationMode(_ mode: NoiseCancellationMode) {
         guard isConnected else {
             callback.onError(.connectionFailed)
