@@ -48,6 +48,7 @@ extension NoiseCancellationMode: DeviceCapability {
             case .ear1,
                  .ear2,
                  .ear3,
+                 .ear3A,
                  .ear,
                  .earA,
                  .headphone1,

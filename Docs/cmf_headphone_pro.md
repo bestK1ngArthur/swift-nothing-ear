@@ -17,12 +17,12 @@
 | **Spatial Audio** | 🟢 | Read and change mode |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
 | **Equalizer Presets** | 🟡 | Read and set default EQ presets without genre presets |
-| **Gesture Controls** | 🔴 | Not supported yet |
+| **Gesture Controls** | 🔴 | Supported by device, but not implemented by this package |
 | **In-Ear Detection** | 🟢 | Read and set |
 | **Personalized ANC** | 🟢 | Read and set |
 | **Low Lag Mode** | 🟢 | Read and set |
 | **Find My Earbuds** | 🟢 | Read and set |
-| **High Quality Audio** | 🔴 | Not supported yet |
+| **High Quality Audio** | 🔴 | Supported by device, but not implemented by this package |
 
 - 🟢 Supported
 - 🟡 Partially supported

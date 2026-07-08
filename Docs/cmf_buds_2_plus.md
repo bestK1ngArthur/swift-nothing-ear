@@ -23,7 +23,7 @@
 | **Personalized ANC** | 🟡 | Available in device settings |
 | **Low Latency Mode** | 🟢 | Read and set |
 | **Find My Earbuds** | 🟢 | Read and set |
-| **High Quality Audio** | 🔴 | Device supports it, package API is not available yet |
+| **High Quality Audio** | 🔴 | Supported by device, but not implemented by this package |
 
 - 🟢 Supported
 - 🟡 Partially supported
