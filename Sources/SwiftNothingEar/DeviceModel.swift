@@ -5,6 +5,7 @@ public enum DeviceModel: Sendable, Equatable {
     case ear1(Ear1)                       // Nothing Ear (1)
     case ear2(Ear2)                       // Nothing Ear (2)
     case ear3(Ear3)                       // Nothing Ear (3)
+    case ear3A(Ear3A)                     // Nothing Ear (3a)
     case earStick                         // Nothing Ear (stick)
     case earOpen(EarOpen)                 // Nothing Ear (open)
     case ear(Ear)                         // Nothing Ear
@@ -36,6 +37,13 @@ extension DeviceModel {
     public enum Ear3: Sendable, Equatable {
         case black
         case white
+    }
+
+    public enum Ear3A: Sendable, Equatable {
+        case black
+        case white
+        case yellow
+        case pink
     }
 
     public enum Ear: Sendable, Equatable {
@@ -119,6 +127,7 @@ extension DeviceModel {
             case .ear1: return "Nothing Ear (1)"
             case .ear2: return "Nothing Ear (2)"
             case .ear3: return "Nothing Ear (3)"
+            case .ear3A: return "Nothing Ear (3a)"
             case .earStick: return "Nothing Ear (stick)"
             case .earOpen: return "Nothing Ear (open)"
             case .ear: return "Nothing Ear"
@@ -141,6 +150,7 @@ extension DeviceModel {
             case .ear1: "B181"
             case .ear2: "B155"
             case .ear3: "B173"
+            case .ear3A: "B190"
             case .earStick: "B157"
             case .earOpen: "B174"
             case .ear: "B171"
@@ -226,6 +236,7 @@ extension DeviceModel {
             case "CMF Buds 2a": .cmfBuds2a(.darkGrey)
             case "Nothing Headphone (1)": .headphone1(.black)
             case "Nothing Ear (3)": .ear3(.black)
+            case "Nothing Ear (3a)": .ear3A(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
             case "Nothing Headphone (a)": .headphoneA(.black)
             default: nil
@@ -378,6 +389,7 @@ extension DeviceModel {
             case (.ear1, .ear1): true
             case (.ear2, .ear2): true
             case (.ear3, .ear3): true
+            case (.ear3A, .ear3A): true
             case (.earStick, .earStick): true
             case (.earOpen, .earOpen): true
             case (.ear, .ear): true

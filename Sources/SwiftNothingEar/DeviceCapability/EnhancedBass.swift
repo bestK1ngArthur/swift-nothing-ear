@@ -32,7 +32,8 @@ extension EnhancedBass: DeviceCapability {
                  .cmfNeckbandPro,
                  .cmfHeadphonePro:
                 true
-            case .earOpen:
+            case .ear3A,
+                 .earOpen:
                 false
         }
     }
