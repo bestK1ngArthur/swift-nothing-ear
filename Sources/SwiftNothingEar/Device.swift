@@ -42,6 +42,7 @@ public struct Callback {
     let onUpdateEQPresetCustom: (EQPresetCustom?) -> Void
     let onUpdateDeviceSettings: (DeviceSettings) -> Void
     let onUpdateRingBuds: (RingBuds) -> Void
+    let onUpdateGestures: ([DeviceGesture]) -> Void
 
     let onError: (ConnectionError) -> Void
 
@@ -57,6 +58,7 @@ public struct Callback {
         onUpdateEQPresetCustom: @escaping (EQPresetCustom?) -> Void = { _ in },
         onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
         onUpdateRingBuds: @escaping (RingBuds) -> Void,
+        onUpdateGestures: @escaping ([DeviceGesture]) -> Void = { _ in },
         onError: @escaping (ConnectionError) -> Void
     ) {
         self.onDiscover = onDiscover
@@ -70,6 +72,7 @@ public struct Callback {
         self.onUpdateEQPresetCustom = onUpdateEQPresetCustom
         self.onUpdateDeviceSettings = onUpdateDeviceSettings
         self.onUpdateRingBuds = onUpdateRingBuds
+        self.onUpdateGestures = onUpdateGestures
         self.onError = onError
     }
 }
@@ -89,6 +92,7 @@ public final class Device: NSObject {
     public private(set) var eqPresetCustom: EQPresetCustom?
     public private(set) var spatialAudio: SpatialAudioMode?
     public private(set) var ringBuds: RingBuds?
+    public private(set) var gestures: [DeviceGesture] = []
 
     private let callback: Callback
 
@@ -366,6 +370,14 @@ extension Device {
             return
         }
 
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsGestures
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setGesture(
                 .init(
@@ -609,6 +621,13 @@ extension Device {
     }
 
     private func sendReadGestureRequest() {
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsGestures
+        else {
+            return
+        }
+
         Logger.bluetooth.debug("👆 Sending read gesture request")
 
         let request = BluetoothRequest(
@@ -814,9 +833,18 @@ extension Device {
                 }
 
             case BluetoothCommand.Response.gesture:
-                let gestures = response.parseGestures()
-                if !gestures.isEmpty {
-                    Logger.parsing.info("👆 Parsed gestures: \(gestures.count, privacy: .public) gesture(s)")
+                let parsedGestures = response.parseGestures()
+                if !parsedGestures.isEmpty {
+                    let deviceGestures = parsedGestures.compactMap { gesture -> DeviceGesture? in
+                        guard let device = gesture.device else {
+                            return nil
+                        }
+
+                        return DeviceGesture(device: device, type: gesture.type, action: gesture.action)
+                    }
+                    self.gestures = deviceGestures
+                    callback.onUpdateGestures(deviceGestures)
+                    Logger.parsing.info("👆 Parsed gestures: \(deviceGestures.count, privacy: .public) gesture(s)")
                 } else {
                     Logger.parsing.warning("👆 No gestures parsed from response")
                 }

@@ -212,6 +212,10 @@ extension DeviceModel {
     public var supportsRingBuds: Bool {
         RingBuds.isSupported(by: self)
     }
+
+    public var supportsGestures: Bool {
+        DeviceGesture.isSupported(by: self)
+    }
 }
 
 // MARK: Model Detection
