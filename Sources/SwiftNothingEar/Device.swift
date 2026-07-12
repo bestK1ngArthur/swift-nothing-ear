@@ -134,7 +134,7 @@ public final class Device: NSObject {
     private var pendingOperations: [UInt8: (Data) -> Void] = [:]
 
     // Track initial device info loading state
-    private var hasReceivedSerialNumber = false
+    private var hasReceivedDeviceIdentity = false
     private var hasReceivedFirmware = false
     private var isInitialConnectionComplete = false
     private var connectionTimeoutTask: Task<Void, Never>?
@@ -186,6 +186,15 @@ extension Device {
             return false
         }
 
+        guard !Self.shouldIgnoreConnectionRequest(
+            currentPeripheralIdentifier: connectedPeripheral?.identifier,
+            requestedPeripheralIdentifier: peripheral.identifier,
+            connectionStatus: connectionStatus,
+            peripheralState: peripheral.state
+        ) else {
+            return true
+        }
+
         connectionStatus = .foundConnected
         connect(to: peripheral)
 
@@ -193,6 +202,16 @@ extension Device {
     }
 
     public func connect(to peripheral: CBPeripheral) {
+        if Self.shouldIgnoreConnectionRequest(
+            currentPeripheralIdentifier: connectedPeripheral?.identifier,
+            requestedPeripheralIdentifier: peripheral.identifier,
+            connectionStatus: connectionStatus,
+            peripheralState: peripheral.state
+        ) {
+            Logger.bluetooth.info("⏭️ Ignoring duplicate connection request for peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
+            return
+        }
+
         stopScanning()
         connectionStatus = .connecting
         connectedPeripheral = peripheral
@@ -405,11 +424,27 @@ extension Device {
 
 extension Device {
 
+    static func shouldIgnoreConnectionRequest(
+        currentPeripheralIdentifier: UUID?,
+        requestedPeripheralIdentifier: UUID,
+        connectionStatus: ConnectionStatus,
+        peripheralState: CBPeripheralState
+    ) -> Bool {
+        guard currentPeripheralIdentifier == requestedPeripheralIdentifier else {
+            return false
+        }
+
+        return connectionStatus == .connecting
+            || connectionStatus == .connected
+            || peripheralState == .connecting
+            || peripheralState == .connected
+    }
+
     private func refreshDeviceStatus() {
         guard isConnected else { return }
 
         // Reset state flags for new connection
-        hasReceivedSerialNumber = false
+        hasReceivedDeviceIdentity = false
         hasReceivedFirmware = false
         isInitialConnectionComplete = false
 
@@ -450,7 +485,7 @@ extension Device {
 
     private func completeInitialConnection() {
         guard !isInitialConnectionComplete else { return }
-        guard hasReceivedSerialNumber && hasReceivedFirmware else { return }
+        guard hasReceivedDeviceIdentity && hasReceivedFirmware else { return }
 
         isInitialConnectionComplete = true
 
@@ -690,27 +725,27 @@ extension Device {
         switch response.command {
             case BluetoothCommand.Response.serialNumber:
                 let deviceName = connectedPeripheral?.name ?? "Unknown"
-                let bluetoothAddress = response.parseBluetoothAddress()
-                if let serialNumber = response.parseSerialNumber(),
-                   let detectedModel = DeviceModel.getModel(for: deviceName, serialNumber: serialNumber) {
+
+                if let identity = response.parseDeviceIdentity(deviceName: deviceName) {
                     updateDeviceInfo { deviceInfo in
-                        deviceInfo.model = detectedModel
-                        deviceInfo.serialNumber = serialNumber
-                        if let bluetoothAddress {
-                            deviceInfo.bluetoothAddress = bluetoothAddress
-                        }
+                        deviceInfo.model = identity.model
+                        deviceInfo.serialNumber = identity.serialNumber
+                        deviceInfo.bluetoothAddress = identity.bluetoothAddress
                     }
-                    hasReceivedSerialNumber = true
-                    if let bluetoothAddress {
-                        Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public), bt=\(bluetoothAddress, privacy: .public)")
-                    } else {
-                        Logger.parsing.info("🏷️ Parsed device info: model=\(detectedModel.code, privacy: .public), serial=\(serialNumber, privacy: .public)")
+                    hasReceivedDeviceIdentity = true
+
+                    if !identity.serialNumber.isEmpty, let bluetoothAddress = identity.bluetoothAddress {
+                        Logger.parsing.info("🏷️ Parsed device info: model=\(identity.model.code, privacy: .public), serial=\(identity.serialNumber, privacy: .public), bt=\(bluetoothAddress, privacy: .public)")
+                    } else if !identity.serialNumber.isEmpty {
+                        Logger.parsing.info("🏷️ Parsed device info: model=\(identity.model.code, privacy: .public), serial=\(identity.serialNumber, privacy: .public)")
+                    } else if let bluetoothAddress = identity.bluetoothAddress {
+                        Logger.parsing.info("🏷️ Parsed device info without serial: model=\(identity.model.code, privacy: .public), bt=\(bluetoothAddress, privacy: .public)")
                     }
 
                     // Check if we can complete the initial connection
                     completeInitialConnection()
                 } else {
-                    Logger.parsing.warning("🏷️ Failed to parse serial number from response")
+                    Logger.parsing.warning("🏷️ Failed to detect model for device identity")
                 }
 
             case BluetoothCommand.Response.firmware:
@@ -930,7 +965,7 @@ extension Device: CBCentralManagerDelegate {
             connectionTimeoutTask = nil
 
             // Reset connection state
-            hasReceivedSerialNumber = false
+            hasReceivedDeviceIdentity = false
             hasReceivedFirmware = false
             isInitialConnectionComplete = false
 
@@ -965,7 +1000,7 @@ extension Device: CBCentralManagerDelegate {
             connectionTimeoutTask = nil
 
             // Reset connection state
-            hasReceivedSerialNumber = false
+            hasReceivedDeviceIdentity = false
             hasReceivedFirmware = false
             isInitialConnectionComplete = false
 

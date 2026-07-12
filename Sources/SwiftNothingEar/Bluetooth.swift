@@ -154,6 +154,12 @@ struct Gesture {
     let device: GestureDevice?
 }
 
+struct DeviceIdentity {
+    let model: DeviceModel
+    let serialNumber: String
+    let bluetoothAddress: String?
+}
+
 // MARK: Bluetooth Request
 
 extension BluetoothRequest {
@@ -674,6 +680,28 @@ extension BluetoothResponse {
         }
 
         return nil
+    }
+
+    func parseDeviceIdentity(deviceName: String) -> DeviceIdentity? {
+        let serialNumber = parseSerialNumber()
+        let bluetoothAddress = parseBluetoothAddress()
+
+        guard serialNumber != nil || bluetoothAddress != nil else {
+            return nil
+        }
+
+        guard let model = DeviceModel.getModel(
+            for: deviceName,
+            serialNumber: serialNumber ?? ""
+        ) else {
+            return nil
+        }
+
+        return DeviceIdentity(
+            model: model,
+            serialNumber: serialNumber ?? "",
+            bluetoothAddress: bluetoothAddress
+        )
     }
 
     // MARK: Device Settings
