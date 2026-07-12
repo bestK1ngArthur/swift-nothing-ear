@@ -184,8 +184,8 @@ final class NothingEarTests: XCTestCase {
             0x2C, 0x31, 0x2C, 0x0A, 0x34, 0x2C, 0x32, 0x2C,
             0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E, 0x35, 0x36,
             0x0A, 0x34, 0x2C, 0x34, 0x2C, 0x0A, 0x33, 0x2C,
-            0x36, 0x2C, 0x43, 0x43, 0x37, 0x35, 0x37, 0x34,
-            0x45, 0x45, 0x42, 0x45, 0x32, 0x43, 0x0A
+            0x36, 0x2C, 0x37, 0x41, 0x31, 0x39, 0x44, 0x33,
+            0x34, 0x46, 0x42, 0x38, 0x32, 0x36, 0x0A
         ]
 
         guard let response = BluetoothResponse(data: responseBytes) else {
@@ -194,12 +194,12 @@ final class NothingEarTests: XCTestCase {
         }
 
         XCTAssertNil(response.parseSerialNumber())
-        XCTAssertEqual(response.parseBluetoothAddress(), "2C:BE:EE:74:75:CC")
+        XCTAssertEqual(response.parseBluetoothAddress(), "26:B8:4F:D3:19:7A")
 
         let identity = response.parseDeviceIdentity(deviceName: "Nothing Ear")
         XCTAssertEqual(identity?.model, .ear(.black))
         XCTAssertEqual(identity?.serialNumber, "")
-        XCTAssertEqual(identity?.bluetoothAddress, "2C:BE:EE:74:75:CC")
+        XCTAssertEqual(identity?.bluetoothAddress, "26:B8:4F:D3:19:7A")
     }
 
     func testCustomEQPreset() {
