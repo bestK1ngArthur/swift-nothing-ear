@@ -20,6 +20,7 @@ public enum DeviceModel: Sendable, Equatable {
     case cmfBudsPro2(CMFBudsPro2)         // CMF Buds Pro 2
     case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
     case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
+    case cmfClipPro(CMFClipPro)           // CMF Clip Pro
 }
 
 extension DeviceModel {
@@ -122,6 +123,12 @@ extension DeviceModel {
         case darkGrey
     }
 
+    public enum CMFClipPro: Sendable, Equatable {
+        case darkGrey
+        case lightGrey
+        case coral
+    }
+
     public var displayName: String {
         switch self {
             case .ear1: return "Nothing Ear (1)"
@@ -142,6 +149,7 @@ extension DeviceModel {
             case .cmfBudsPro2: return "CMF Buds Pro 2"
             case .cmfNeckbandPro: return "CMF Neckband Pro"
             case .cmfHeadphonePro: return "CMF Headphone Pro"
+            case .cmfClipPro: return "CMF Clip Pro"
         }
     }
 
@@ -165,6 +173,7 @@ extension DeviceModel {
             case .cmfBudsPro2: "B172"
             case .cmfNeckbandPro: "B164"
             case .cmfHeadphonePro: "B175"
+            case .cmfClipPro: "B189"
         }
     }
 
@@ -177,7 +186,8 @@ extension DeviceModel {
                   .cmfBuds2Plus,
                   .cmfBudsPro2,
                   .cmfNeckbandPro,
-                  .cmfHeadphonePro:
+                  .cmfHeadphonePro,
+                  .cmfClipPro:
                 return true
             default:
                 return false
@@ -212,6 +222,13 @@ extension DeviceModel {
     public var supportsRingBuds: Bool {
         RingBuds.isSupported(by: self)
     }
+
+    public var supportsInEarDetection: Bool {
+        switch self {
+            case .cmfClipPro: false
+            default: true
+        }
+    }
 }
 
 // MARK: Model Detection
@@ -238,6 +255,7 @@ extension DeviceModel {
             case "Nothing Ear (3)": .ear3(.black)
             case "Nothing Ear (3a)": .ear3A(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
+            case "CMF Clip Pro": .cmfClipPro(.darkGrey)
             case "Nothing Headphone (a)": .headphoneA(.black)
             default: nil
         }
@@ -404,6 +422,7 @@ extension DeviceModel {
             case (.cmfBudsPro2, .cmfBudsPro2): true
             case (.cmfNeckbandPro, .cmfNeckbandPro): true
             case (.cmfHeadphonePro, .cmfHeadphonePro): true
+            case (.cmfClipPro, .cmfClipPro): true
             default: false
         }
     }

@@ -331,6 +331,14 @@ extension Device {
             return
         }
 
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsInEarDetection
+        else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setInEarDetection(
                 isEnabled,
@@ -611,6 +619,13 @@ extension Device {
     }
 
     private func sendReadInEarRequest() {
+        guard
+            let deviceInfo,
+            deviceInfo.model.supportsInEarDetection
+        else {
+            return
+        }
+
         Logger.bluetooth.debug("👂 Sending in-ear detection request")
 
         let request = BluetoothRequest(
