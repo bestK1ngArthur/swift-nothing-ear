@@ -50,6 +50,11 @@ extension EQPreset: DeviceCapability {
                  .cmfHeadphonePro:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
 
+            case .cmfClipPro:
+                // The device also exposes genre presets that are not represented
+                // by EQPreset yet. Advanced EQ is not supported by its config.
+                [.balanced, .voice, .moreTreble, .moreBass, .custom]
+
             case .cmfNeckbandPro:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom]
         }
@@ -147,7 +152,8 @@ extension DeviceModel {
                  .earOpen,
                  .ear,
                  .earA,
-                 .cmfBudsPro:
+                 .cmfBudsPro,
+                 .cmfClipPro:
                 return spec3400
 
             case .cmfBuds,

@@ -31,6 +31,7 @@ Special credits to:
 - 🟢 [CMF Buds Pro 2](Docs/cmf_buds_pro_2.md)
 - 🟡 [CMF Neckband Pro](Docs/cmf_neckband_pro.md)
 - 🟡 [CMF Headphone Pro](Docs/cmf_headphone_pro.md)
+- 🟡 [CMF Clip Pro](Docs/cmf_clip_pro.md)
 
 ## Installation
 
