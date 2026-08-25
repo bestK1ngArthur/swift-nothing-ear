@@ -50,7 +50,8 @@ extension EQPreset: DeviceCapability {
                  .cmfHeadphonePro:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
 
-            case .cmfClipPro:
+            case .cmfBudsNeo,
+                 .cmfClipPro:
                 // The device also exposes genre presets that are not represented
                 // by EQPreset yet. Advanced EQ is not supported by its config.
                 [.balanced, .voice, .moreTreble, .moreBass, .custom]
@@ -67,7 +68,12 @@ extension DeviceModel {
 
     var supportsListeningMode: Bool {
         switch self {
-            case .cmfBuds, .cmfBuds2a, .cmfBuds2, .cmfBuds2Plus, .cmfBudsPro2:
+            case .cmfBuds,
+                 .cmfBudsNeo,
+                 .cmfBuds2a,
+                 .cmfBuds2,
+                 .cmfBuds2Plus,
+                 .cmfBudsPro2:
                 return true
             default:
                 return false
@@ -153,6 +159,7 @@ extension DeviceModel {
                  .ear,
                  .earA,
                  .cmfBudsPro,
+                 .cmfBudsNeo,
                  .cmfClipPro:
                 return spec3400
 

@@ -24,6 +24,7 @@ extension EnhancedBass: DeviceCapability {
                  .headphone1,
                  .headphoneA,
                  .cmfBuds,
+                 .cmfBudsNeo,
                  .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBuds2Plus,

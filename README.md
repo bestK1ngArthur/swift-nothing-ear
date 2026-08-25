@@ -24,6 +24,7 @@ Special credits to:
 - 🟢 [Nothing Headphone (1)](Docs/headphones_1.md)
 - 🟡 [Nothing Headphone (a)](Docs/headphones_a.md)
 - 🟡 [CMF Buds](Docs/cmf_buds.md)
+- 🟡 [CMF Buds Neo](Docs/cmf_buds_neo.md)
 - 🟡 [CMF Buds 2a](Docs/cmf_buds_2a.md)
 - 🟢 [CMF Buds 2](Docs/cmf_buds_2.md)
 - 🟡 [CMF Buds 2 Plus](Docs/cmf_buds_2_plus.md)
