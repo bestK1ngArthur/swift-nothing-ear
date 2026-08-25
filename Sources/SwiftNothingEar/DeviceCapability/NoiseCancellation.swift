@@ -54,6 +54,7 @@ extension NoiseCancellationMode: DeviceCapability {
                  .headphone1,
                  .headphoneA,
                  .cmfBuds,
+                 .cmfBudsNeo,
                  .cmfBudsPro,
                  .cmfBuds2a,
                  .cmfBuds2,

@@ -29,6 +29,7 @@ extension SpatialAudioMode: DeviceCapability {
                  .ear3A,
                  .headphone1,
                  .headphoneA,
+                 .cmfBudsNeo,
                  .cmfBuds2,
                  .cmfBuds2Plus,
                  .cmfBudsPro2,
@@ -58,6 +59,7 @@ extension SpatialAudioMode: DeviceCapability {
 
             case .ear3,
                  .ear3A,
+                 .cmfBudsNeo,
                  .cmfBuds2,
                  .cmfBuds2Plus,
                  .cmfBudsPro2,
@@ -85,6 +87,7 @@ extension SpatialAudioMode: DeviceCapability {
         switch model {
             case .cmfBudsPro,
                  .cmfBuds,
+                 .cmfBudsNeo,
                  .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBuds2Plus,
