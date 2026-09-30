@@ -18,7 +18,7 @@
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
 | **Equalizer Presets** | 🟡 | Read and set default EQ presets without genre presets |
 | **Gesture Controls** | 🔴 | Supported by device, but not implemented by this package |
-| **In-Ear Detection** | 🟢 | Read and set |
+| **In-Ear Detection** | ⚫ | Not supported by device |
 | **Personalized ANC** | 🟢 | Read and set |
 | **Low Lag Mode** | 🟢 | Read and set |
 | **Find My Earbuds** | 🟢 | Read and set |

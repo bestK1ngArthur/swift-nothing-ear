@@ -4,7 +4,7 @@ import XCTest
 final class CMFBudsNeoTests: XCTestCase {
 
     func testModelMetadata() {
-        let model = DeviceModel.cmfBudsNeo(.black)
+        let model = DeviceModel.cmfBudsNeo(.darkGrey)
 
         XCTAssertEqual(model.displayName, "CMF Buds Neo")
         XCTAssertEqual(model.code, "B193")
@@ -17,18 +17,18 @@ final class CMFBudsNeoTests: XCTestCase {
         XCTAssertNil(DeviceModel.getModel(from: unknownSerial))
         XCTAssertEqual(
             DeviceModel.getModel(for: "CMF Buds Neo", serialNumber: unknownSerial),
-            .cmfBudsNeo(.black)
+            .cmfBudsNeo(.darkGrey)
         )
         XCTAssertEqual(
             DeviceModel.getModel(for: "CMF Buds Neo", serialNumber: ""),
-            .cmfBudsNeo(.black)
+            .cmfBudsNeo(.darkGrey)
         )
     }
 
     func testModelDetectionPrefersNameWhenSerialHasDifferentModel() {
         XCTAssertEqual(
             DeviceModel.getModel(for: "CMF Buds Neo", serialNumber: "SH002501000000"),
-            .cmfBudsNeo(.black)
+            .cmfBudsNeo(.darkGrey)
         )
     }
 
@@ -38,9 +38,9 @@ final class CMFBudsNeoTests: XCTestCase {
 
     func testCapabilities() {
         let models: [DeviceModel] = [
-            .cmfBudsNeo(.black),
-            .cmfBudsNeo(.white),
-            .cmfBudsNeo(.darkBlue)
+            .cmfBudsNeo(.darkGrey),
+            .cmfBudsNeo(.orange),
+            .cmfBudsNeo(.blue)
         ]
 
         for model in models {
@@ -61,11 +61,11 @@ final class CMFBudsNeoTests: XCTestCase {
 
     func testSpatialAudioModes() {
         XCTAssertEqual(
-            SpatialAudioMode.allSupported(by: .cmfBudsNeo(.black)),
+            SpatialAudioMode.allSupported(by: .cmfBudsNeo(.darkGrey)),
             [.off, .fixed]
         )
         XCTAssertTrue(
-            SpatialAudioMode.isCompatibleWithEnhancedBass(by: .cmfBudsNeo(.black))
+            SpatialAudioMode.isCompatibleWithEnhancedBass(by: .cmfBudsNeo(.darkGrey))
         )
     }
 
@@ -183,7 +183,7 @@ final class CMFBudsNeoTests: XCTestCase {
         )
         XCTAssertEqual(
             gestureWriteRequest.toBytes(),
-            [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x02, 0x01, 0x02, 0x02, 0x93, 0x3E]
+            [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x02, 0x01, 0x02, 0x09, 0xD2, 0xF9]
         )
 
         throw XCTSkip("Captured CMF Buds Neo gesture response bytes are not available.")
@@ -233,7 +233,7 @@ final class CMFBudsNeoTests: XCTestCase {
     }
 
     func testCustomEQPreset() {
-        let model = DeviceModel.cmfBudsNeo(.black)
+        let model = DeviceModel.cmfBudsNeo(.darkGrey)
         let preset = EQPresetCustom(bass: 6, mid: 0, treble: -3)
 
         assertCustomEQWrite(for: model, preset: preset)

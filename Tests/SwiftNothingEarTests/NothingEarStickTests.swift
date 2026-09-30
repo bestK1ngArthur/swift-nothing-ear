@@ -27,23 +27,7 @@ final class NothingEarStickTests: XCTestCase {
     }
 
     func testEnhancedBass() {
-        let enhancedBassRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.enhancedBass, payload: [], operationID: 0x01)
-        XCTAssertEqual(enhancedBassRequest.toBytes(), [0x55, 0x60, 0x01, 0x4E, 0xC0, 0x00, 0x00, 0x01, 0x71, 0x11])
-
-        let enhancedBassWriteRequest = BluetoothRequest.setEnhancedBass(.init(isEnabled: true, level: 20), operationID: 0x01)
-        XCTAssertEqual(enhancedBassWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x51, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x28, 0x77, 0x23])
-
-        let enhancedBassResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x4E, 0x40, 0x02, 0x00, 0x01,
-            0x01, 0x28
-        ]
-        guard let enhancedBassResponse = BluetoothResponse(data: enhancedBassResponseBytes) else {
-            XCTFail("Failed to parse enhanced bass response")
-            return
-        }
-        let enhancedBass = enhancedBassResponse.parseEnhancedBassSettings()
-        XCTAssertEqual(enhancedBass?.isEnabled, true)
-        XCTAssertEqual(enhancedBass?.level, 20)
+        XCTAssertFalse(EnhancedBass.isSupported(by: .earStick))
     }
 
     func testEQPreset() {
@@ -105,11 +89,11 @@ final class NothingEarStickTests: XCTestCase {
         XCTAssertEqual(gestureRequest.toBytes(), [0x55, 0x60, 0x01, 0x18, 0xC0, 0x00, 0x00, 0x01, 0x39, 0x1D])
 
         let gestureWriteRequest = BluetoothRequest.setGesture(.init(type: .tap, action: .playPause, device: .left), operationID: 0x01)
-        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x02, 0x01, 0x01, 0x01, 0xD3, 0xCF])
+        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x02, 0x01, 0x01, 0x02, 0x93, 0xCE])
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
-            0x01, 0x02, 0x00, 0x01, 0x01
+            0x01, 0x02, 0x01, 0x01, 0x02
         ]
         guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
             XCTFail("Failed to parse gesture response")
@@ -155,5 +139,10 @@ final class NothingEarStickTests: XCTestCase {
 
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
+    }
+
+    func testModelDetectionByAlternativeNames() {
+        XCTAssertEqual(DeviceModel.getModel(for: "Ear (Stick)", serialNumber: ""), .earStick)
+        XCTAssertEqual(DeviceModel.getModel(for: "Ear (stick)", serialNumber: ""), .earStick)
     }
 }

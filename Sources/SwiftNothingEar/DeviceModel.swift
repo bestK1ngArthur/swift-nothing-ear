@@ -95,9 +95,9 @@ extension DeviceModel {
     }
 
     public enum CMFBudsNeo: Sendable, Equatable {
-        case black
-        case white
-        case darkBlue
+        case darkGrey
+        case orange
+        case blue
     }
 
     public enum CMFBuds2: Sendable, Equatable {
@@ -243,7 +243,12 @@ extension DeviceModel {
 
     public var supportsInEarDetection: Bool {
         switch self {
-            case .cmfBudsNeo,
+            case .earOpen,
+                 .headphoneA,
+                 .cmfBudsNeo,
+                 .cmfBuds2a,
+                 .cmfNeckbandPro,
+                 .cmfHeadphonePro,
                  .cmfClipPro:
                 false
             default: true
@@ -259,15 +264,15 @@ extension DeviceModel {
         // Try to detect model by name without color
         let modelByName: Self? = switch deviceName {
             case "Nothing ear (1)": .ear1(.black)
-            case "Ear (Stick)": .earStick
+            case "Ear (Stick)", "Ear (stick)": .earStick
             case "Ear (2)": .ear2(.black)
             case "Nothing Ear": .ear(.black)
             case "Nothing Ear (a)": .earA(.black)
-            case "Nothing Ear (open)": .earOpen(.white)
-            case "Buds Pro": .cmfBudsPro(.black)
-            case "Neckband Pro": .cmfNeckbandPro(.black)
+            case "Nothing Ear (open)", "Nothing ear (open)": .earOpen(.white)
+            case "Buds Pro", "CMF Buds Pro": .cmfBudsPro(.black)
+            case "Neckband Pro", "CMF Neckband Pro", "CMF Neckband": .cmfNeckbandPro(.black)
             case "CMF Buds": .cmfBuds(.black)
-            case "CMF Buds Neo": .cmfBudsNeo(.black)
+            case "CMF Buds Neo": .cmfBudsNeo(.darkGrey)
             case "CMF Buds Pro 2": .cmfBudsPro2(.black)
             case "CMF Buds 2": .cmfBuds2(.darkGrey)
             case "CMF Buds 2 Plus": .cmfBuds2Plus(.lightGrey)

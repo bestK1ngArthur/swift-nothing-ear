@@ -49,7 +49,7 @@ enum BluetoothCommand {
         static let earFitTest: UInt16      = 57357 // 0xE00D
         static let enhancedBass: UInt16    = 16462 // 0x404E
         static let eqA: UInt16             = 16415 // 0x401F
-        static let eqB: UInt16             = 16464 // 0x4040
+        static let eqB: UInt16             = 16464 // 0x4050
         static let firmware: UInt16        = 16450 // 0x4042
         static let gesture: UInt16         = 16408 // 0x4018
         static let inEarDetection: UInt16  = 16398 // 0x400E
@@ -254,7 +254,13 @@ extension BluetoothRequest {
         operationID: UInt8
     ) -> Self {
         let deviceValue = gesture.device?.rawValue8 ?? 0x01
-        let payload: [UInt8] = [0x01, deviceValue, 0x01, gesture.type.rawValue8, gesture.action.rawValue8]
+        let payload: [UInt8] = [
+            0x01,
+            deviceValue,
+            0x01,
+            gesture.type.rawValue8,
+            gesture.action.rawValue8(for: gesture.type)
+        ]
         return Self(
             command: BluetoothCommand.RequestWrite.gesture,
             payload: payload,
@@ -382,7 +388,9 @@ private extension BluetoothRequest {
         }
         let totalGain = -maxGain
 
-        let packetSize = 1 + 4 + (eqBands.count * 16) + (eqBands.count * 3)
+        // Matches Nothing X: the buffer is sized 16 bytes per band, while each band
+        // takes 13 bytes, so the packet ends with zero padding.
+        let packetSize = 1 + 4 + (eqBands.count * 16)
         var packet = [UInt8](repeating: 0, count: packetSize)
         var offset = 0
 
@@ -408,13 +416,6 @@ private extension BluetoothRequest {
             let qBytes = floatBytes(band.quality)
             packet[offset..<(offset + 4)] = qBytes[0..<4]
             offset += 4
-        }
-
-        for _ in eqBands {
-            packet[offset] = 0x00
-            packet[offset + 1] = 0x00
-            packet[offset + 2] = 0x00
-            offset += 3
         }
 
         return packet
@@ -500,16 +501,16 @@ extension BluetoothResponse {
     }
 
     func parseCustomEQPreset() -> EQPresetCustom? {
-        // Offsets are based on Nothing's custom EQ payload layout.
-        let bassOffset = 6
-        let midOffset = 19
-        let trebleOffset = 32
+        // Layout: [count, totalGain(4), (filterType, gain(4), frequency(4), quality(4)) * count].
+        // Bands are matched by filter type, not by position, like Nothing X does.
+        let headerSize = 5
+        let bandSize = 13
 
-        func readFloat(at offset: Int) -> Float? {
-            guard payload.count >= offset + 4 else {
-                return nil
-            }
+        guard payload.count >= headerSize else {
+            return nil
+        }
 
+        func readFloat(at offset: Int) -> Float {
             let raw = UInt32(payload[offset])
                 | (UInt32(payload[offset + 1]) << 8)
                 | (UInt32(payload[offset + 2]) << 16)
@@ -517,10 +518,18 @@ extension BluetoothResponse {
             return Float(bitPattern: raw)
         }
 
+        let bandCount = min(Int(payload[0]), (payload.count - headerSize) / bandSize)
+        var gains: [UInt8: Float] = [:]
+
+        for i in 0..<bandCount {
+            let offset = headerSize + (i * bandSize)
+            gains[payload[offset]] = readFloat(at: offset + 1)
+        }
+
         guard
-            let bassValue = readFloat(at: bassOffset),
-            let midValue = readFloat(at: midOffset),
-            let trebleValue = readFloat(at: trebleOffset)
+            let bassValue = gains[0x00],   // LOW_SHELF
+            let midValue = gains[0x01],    // PEAK
+            let trebleValue = gains[0x02]  // HIGH_SHELF
         else {
             return nil
         }
@@ -707,11 +716,21 @@ extension BluetoothResponse {
     // MARK: Device Settings
 
     func parseInEarDetection() -> Bool? {
+        // Layout: [count, (featureType, isEnabled) * count]; in-ear detection is feature type 0x01.
         guard payload.count >= 3 else {
             return nil
         }
 
-        return payload[2] != 0
+        let featureCount = min(Int(payload[0]), (payload.count - 1) / 2)
+
+        for i in 0..<featureCount {
+            let offset = 1 + (i * 2)
+            if payload[offset] == 0x01 {
+                return payload[offset + 1] != 0
+            }
+        }
+
+        return nil
     }
 
     func parseLowLatency() -> Bool? {
@@ -728,7 +747,7 @@ extension BluetoothResponse {
         }
 
         let enabled = payload[0] != 0
-        let level = Int(payload[1]) / 2 // Convert from 0-200 to 0-100
+        let level = Int(payload[1]) / 2 // Device reports 2, 4, 6, 8, 10 for levels 1-5
 
         return .init(isEnabled: enabled, level: level)
     }
@@ -894,7 +913,7 @@ extension GestureType {
             case .tap: return 0x01
             case .doubleTap: return 0x02
             case .trippleTap: return 0x03
-            case .longPress: return 0x0B
+            case .longPress: return 0x07
         }
     }
 
@@ -903,7 +922,7 @@ extension GestureType {
             case 0x01: return .tap
             case 0x02: return .doubleTap
             case 0x03: return .trippleTap
-            case 0x0B: return .longPress
+            case 0x07: return .longPress
             default: return nil
         }
     }
@@ -913,31 +932,33 @@ extension GestureType {
 
 extension GestureAction {
 
-    var rawValue8: UInt8 {
+    // Operation codes from Nothing X `ControlConfigurationEntity`.
+    func rawValue8(for type: GestureType) -> UInt8 {
         switch self {
-            case .none: return 0x00
-            case .playPause: return 0x01
-            case .nextTrack: return 0x02
-            case .previousTrack: return 0x03
-            case .volumeUp: return 0x04
-            case .volumeDown: return 0x05
-            case .voiceAssistant: return 0x06
-            case .ancToggle: return 0x07
-            case .customAction: return 0x08
+            case .none: return 0x01
+            case .playPause: return 0x02
+            case .nextTrack: return 0x09
+            case .previousTrack: return 0x08
+            case .volumeUp: return type == .longPress ? 0x12 : 0x06
+            case .volumeDown: return type == .longPress ? 0x13 : 0x07
+            case .voiceAssistant: return 0x0B
+            case .ancToggle: return 0x0A
+            case .customAction: return 0x01 // Not writable, see `GestureAction.customAction`
         }
     }
 
     static func from8BitValue(_ value: UInt8) -> Self? {
         switch value {
-            case 0x00: return Self.none
-            case 0x01: return .playPause
-            case 0x02: return .nextTrack
-            case 0x03: return .previousTrack
-            case 0x04: return .volumeUp
-            case 0x05: return .volumeDown
-            case 0x06: return .voiceAssistant
-            case 0x07: return .ancToggle
-            case 0x08: return .customAction
+            case 0x01: return Self.none
+            case 0x02: return .playPause
+            case 0x06, 0x12: return .volumeUp
+            case 0x07, 0x13: return .volumeDown
+            case 0x08: return .previousTrack
+            case 0x09: return .nextTrack
+            case 0x0A, 0x16: return .ancToggle
+            case 0x0B: return .voiceAssistant
+            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1D, 0x1F...0x25, 0x27, 0x28:
+                return .customAction
             default: return nil
         }
     }

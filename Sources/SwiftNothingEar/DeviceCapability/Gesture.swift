@@ -21,5 +21,7 @@ public enum GestureAction: Sendable {
     case volumeDown
     case voiceAssistant
     case ancToggle
+    /// A device-specific action this package does not model (e.g. Nothing Radio, camera shutter).
+    /// Only produced when reading gestures; it cannot be written.
     case customAction
 }

@@ -123,11 +123,11 @@ final class NothingEarTests: XCTestCase {
         XCTAssertEqual(gestureRequest.toBytes(), [0x55, 0x60, 0x01, 0x18, 0xC0, 0x00, 0x00, 0x01, 0x39, 0x1D])
 
         let gestureWriteRequest = BluetoothRequest.setGesture(.init(type: .trippleTap, action: .volumeUp, device: .right), operationID: 0x01)
-        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x04, 0x13, 0x50])
+        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x03, 0x06, 0x92, 0x91])
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
-            0x01, 0x03, 0x00, 0x03, 0x04
+            0x01, 0x03, 0x01, 0x03, 0x06
         ]
         guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
             XCTFail("Failed to parse gesture response")
@@ -208,5 +208,41 @@ final class NothingEarTests: XCTestCase {
 
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
+    }
+
+    func testGestureWithUnmodeledActionIsParsedAsCustomAction() {
+        // Nothing Radio (0x20) on a single press of the right bud
+        let gestureResponseBytes: [UInt8] = [
+            0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
+            0x01, 0x03, 0x01, 0x01, 0x20
+        ]
+        guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
+            XCTFail("Failed to parse gesture response")
+            return
+        }
+        let gestures = gestureResponse.parseGestures()
+        XCTAssertEqual(gestures.count, 1)
+        XCTAssertEqual(gestures.first?.type, .tap)
+        XCTAssertEqual(gestures.first?.action, .customAction)
+    }
+
+    func testLongPressVolumeUsesHoldOperation() {
+        let request = BluetoothRequest.setGesture(
+            .init(type: .longPress, action: .volumeUp, device: .left),
+            operationID: 0x01
+        )
+        XCTAssertEqual(Array(request.payload), [0x01, 0x02, 0x01, 0x07, 0x12])
+    }
+
+    func testInEarDetectionFindsFeatureTypeInAnyPosition() {
+        let inEarResponseBytes: [UInt8] = [
+            0x55, 0x60, 0x01, 0x0E, 0x40, 0x05, 0x00, 0x01,
+            0x02, 0x02, 0x01, 0x01, 0x00
+        ]
+        guard let inEarResponse = BluetoothResponse(data: inEarResponseBytes) else {
+            XCTFail("Failed to parse in-ear response")
+            return
+        }
+        XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
     }
 }

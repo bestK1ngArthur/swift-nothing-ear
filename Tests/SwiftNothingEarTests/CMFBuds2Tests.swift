@@ -141,11 +141,11 @@ final class CMFBuds2Tests: XCTestCase {
         XCTAssertEqual(gestureRequest.toBytes(), [0x55, 0x60, 0x01, 0x18, 0xC0, 0x00, 0x00, 0x01, 0x39, 0x1D])
 
         let gestureWriteRequest = BluetoothRequest.setGesture(.init(type: .doubleTap, action: .nextTrack, device: .right), operationID: 0x01)
-        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x02, 0x02, 0x92, 0xC2])
+        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x02, 0x09, 0xD3, 0x05])
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
-            0x01, 0x03, 0x00, 0x02, 0x02
+            0x01, 0x03, 0x01, 0x02, 0x09
         ]
         guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
             XCTFail("Failed to parse gesture response")
@@ -191,5 +191,12 @@ final class CMFBuds2Tests: XCTestCase {
 
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
+    }
+
+    func testSupportedEQPresets() {
+        XCTAssertEqual(
+            EQPreset.allSupported(by: .cmfBuds2(.darkGrey)),
+            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+        )
     }
 }

@@ -393,6 +393,11 @@ extension Device {
             return
         }
 
+        guard action != .customAction else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setGesture(
                 .init(

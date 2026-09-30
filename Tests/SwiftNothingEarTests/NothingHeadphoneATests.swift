@@ -80,4 +80,8 @@ final class NothingHeadphoneATests: XCTestCase {
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
     }
+
+    func testInEarDetection() {
+        XCTAssertFalse(DeviceModel.headphoneA(.black).supportsInEarDetection)
+    }
 }

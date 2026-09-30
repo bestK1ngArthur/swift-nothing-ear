@@ -4,7 +4,7 @@
 
 - **Model Code**: `B193`
 - **Bluetooth Name**: `CMF Buds Neo`
-- **Available Colors**: Black, White, Dark Blue
+- **Available Colors**: Dark Grey, Orange, Blue
 - **Device Type**: True wireless earbuds
 
 ## Features

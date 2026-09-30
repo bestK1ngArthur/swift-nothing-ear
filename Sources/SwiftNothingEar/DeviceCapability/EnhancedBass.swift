@@ -3,7 +3,7 @@ import Foundation
 public struct EnhancedBass: Sendable {
 
     public let isEnabled: Bool
-    public let level: Int // 0-100
+    public let level: Int // 1-5
 
     public init(isEnabled: Bool, level: Int) {
         self.isEnabled = isEnabled
@@ -15,12 +15,9 @@ extension EnhancedBass: DeviceCapability {
 
     public static func isSupported(by model: DeviceModel) -> Bool {
         switch model {
-            case .ear1,
-                 .ear2,
-                 .ear3,
+            case .ear3,
                  .ear,
                  .earA,
-                 .earStick,
                  .headphone1,
                  .headphoneA,
                  .cmfBuds,
@@ -28,15 +25,18 @@ extension EnhancedBass: DeviceCapability {
                  .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBuds2Plus,
-                 .cmfBudsPro,
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
                  .cmfHeadphonePro,
                  .cmfClipPro:
                 true
-            case .ear3A,
+            case .ear1,
+                 .ear2,
+                 .ear3A,
+                 .earStick,
                  .earOpen,
-                 .headphone1Pro:
+                 .headphone1Pro,
+                 .cmfBudsPro:
                 false
         }
     }

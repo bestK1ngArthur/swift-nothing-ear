@@ -63,23 +63,7 @@ final class NothingEar2Tests: XCTestCase {
     }
 
     func testEnhancedBass() {
-        let enhancedBassRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.enhancedBass, payload: [], operationID: 0x01)
-        XCTAssertEqual(enhancedBassRequest.toBytes(), [0x55, 0x60, 0x01, 0x4E, 0xC0, 0x00, 0x00, 0x01, 0x71, 0x11])
-
-        let enhancedBassWriteRequest = BluetoothRequest.setEnhancedBass(.init(isEnabled: true, level: 30), operationID: 0x01)
-        XCTAssertEqual(enhancedBassWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x51, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x3C, 0x77, 0x2C])
-
-        let enhancedBassResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x4E, 0x40, 0x02, 0x00, 0x01,
-            0x01, 0x3C
-        ]
-        guard let enhancedBassResponse = BluetoothResponse(data: enhancedBassResponseBytes) else {
-            XCTFail("Failed to parse enhanced bass response")
-            return
-        }
-        let enhancedBass = enhancedBassResponse.parseEnhancedBassSettings()
-        XCTAssertEqual(enhancedBass?.isEnabled, true)
-        XCTAssertEqual(enhancedBass?.level, 30)
+        XCTAssertFalse(EnhancedBass.isSupported(by: .ear2(.black)))
     }
 
     func testEQPreset() {
@@ -141,11 +125,11 @@ final class NothingEar2Tests: XCTestCase {
         XCTAssertEqual(gestureRequest.toBytes(), [0x55, 0x60, 0x01, 0x18, 0xC0, 0x00, 0x00, 0x01, 0x39, 0x1D])
 
         let gestureWriteRequest = BluetoothRequest.setGesture(.init(type: .doubleTap, action: .nextTrack, device: .right), operationID: 0x01)
-        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x02, 0x02, 0x92, 0xC2])
+        XCTAssertEqual(gestureWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x03, 0xF0, 0x05, 0x00, 0x01, 0x01, 0x03, 0x01, 0x02, 0x09, 0xD3, 0x05])
 
         let gestureResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x18, 0x40, 0x05, 0x00, 0x01,
-            0x01, 0x03, 0x00, 0x02, 0x02
+            0x01, 0x03, 0x01, 0x02, 0x09
         ]
         guard let gestureResponse = BluetoothResponse(data: gestureResponseBytes) else {
             XCTFail("Failed to parse gesture response")

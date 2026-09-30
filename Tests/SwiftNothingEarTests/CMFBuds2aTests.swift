@@ -39,4 +39,15 @@ final class CMFBuds2aTests: XCTestCase {
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
     }
+
+    func testInEarDetection() {
+        XCTAssertFalse(DeviceModel.cmfBuds2a(.darkGrey).supportsInEarDetection)
+    }
+
+    func testSupportedEQPresets() {
+        XCTAssertEqual(
+            EQPreset.allSupported(by: .cmfBuds2a(.darkGrey)),
+            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+        )
+    }
 }

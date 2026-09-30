@@ -15,7 +15,7 @@
 | **Battery Status** | 🟢 | Read battery level and charging status |
 | **Active Noise Cancellation** | 🟢 | Read and change mode |
 | **Spatial Audio** | ⚫ | Not supported by device |
-| **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
+| **Enhanced Bass** | ⚫ | Not supported by device |
 | **Equalizer Presets** | 🟢 | Read and set EQ presets |
 | **Gesture Controls** | 🟢 | Read and set gesture controls |
 | **In-Ear Detection** | 🟢 | Read and set |

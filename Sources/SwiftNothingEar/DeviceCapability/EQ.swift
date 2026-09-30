@@ -31,34 +31,36 @@ extension EQPreset: DeviceCapability {
 
     public static func allSupported(by model: DeviceModel) -> [Self] {
         switch model {
-            case .ear1,
-                 .ear2,
+            case .ear2,
                  .ear3,
                  .ear3A,
                  .earStick,
                  .earOpen,
                  .ear,
-                 .earA,
                  .headphone1,
                  .headphone1Pro, // TODO: Add instrument preset
-                 .headphoneA,
-                 .cmfBuds,
+                 .headphoneA:
+                [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
+
+            case .cmfBuds,
+                 .cmfBudsNeo,
                  .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBuds2Plus,
-                 .cmfBudsPro,
-                 .cmfBudsPro2, // TODO: Add genre presets
-                 .cmfHeadphonePro:
-                [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
-
-            case .cmfBudsNeo,
+                 .cmfBudsPro2,
+                 .cmfHeadphonePro,
                  .cmfClipPro:
                 // The device also exposes genre presets that are not represented
-                // by EQPreset yet. Advanced EQ is not supported by its config.
+                // by EQPreset yet. Advanced EQ is not supported by the device.
                 [.balanced, .voice, .moreTreble, .moreBass, .custom]
 
-            case .cmfNeckbandPro:
+            case .earA,
+                 .cmfBudsPro,
+                 .cmfNeckbandPro:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom]
+
+            case .ear1:
+                [.balanced, .voice, .moreTreble, .moreBass]
         }
     }
 }
