@@ -254,7 +254,13 @@ extension BluetoothRequest {
         operationID: UInt8
     ) -> Self {
         let deviceValue = gesture.device?.rawValue8 ?? 0x01
-        let payload: [UInt8] = [0x01, deviceValue, 0x01, gesture.type.rawValue8, gesture.action.rawValue8]
+        let payload: [UInt8] = [
+            0x01,
+            deviceValue,
+            0x01,
+            gesture.type.rawValue8,
+            gesture.action.rawValue8(for: gesture.type)
+        ]
         return Self(
             command: BluetoothCommand.RequestWrite.gesture,
             payload: payload,
@@ -907,7 +913,7 @@ extension GestureType {
             case .tap: return 0x01
             case .doubleTap: return 0x02
             case .trippleTap: return 0x03
-            case .longPress: return 0x0B
+            case .longPress: return 0x07
         }
     }
 
@@ -916,7 +922,7 @@ extension GestureType {
             case 0x01: return .tap
             case 0x02: return .doubleTap
             case 0x03: return .trippleTap
-            case 0x0B: return .longPress
+            case 0x07: return .longPress
             default: return nil
         }
     }
@@ -926,31 +932,33 @@ extension GestureType {
 
 extension GestureAction {
 
-    var rawValue8: UInt8 {
+    // Operation codes from Nothing X `ControlConfigurationEntity`.
+    func rawValue8(for type: GestureType) -> UInt8 {
         switch self {
-            case .none: return 0x00
-            case .playPause: return 0x01
-            case .nextTrack: return 0x02
-            case .previousTrack: return 0x03
-            case .volumeUp: return 0x04
-            case .volumeDown: return 0x05
-            case .voiceAssistant: return 0x06
-            case .ancToggle: return 0x07
-            case .customAction: return 0x08
+            case .none: return 0x01
+            case .playPause: return 0x02
+            case .nextTrack: return 0x09
+            case .previousTrack: return 0x08
+            case .volumeUp: return type == .longPress ? 0x12 : 0x06
+            case .volumeDown: return type == .longPress ? 0x13 : 0x07
+            case .voiceAssistant: return 0x0B
+            case .ancToggle: return 0x0A
+            case .customAction: return 0x01 // Not writable, see `GestureAction.customAction`
         }
     }
 
     static func from8BitValue(_ value: UInt8) -> Self? {
         switch value {
-            case 0x00: return Self.none
-            case 0x01: return .playPause
-            case 0x02: return .nextTrack
-            case 0x03: return .previousTrack
-            case 0x04: return .volumeUp
-            case 0x05: return .volumeDown
-            case 0x06: return .voiceAssistant
-            case 0x07: return .ancToggle
-            case 0x08: return .customAction
+            case 0x01: return Self.none
+            case 0x02: return .playPause
+            case 0x06, 0x12: return .volumeUp
+            case 0x07, 0x13: return .volumeDown
+            case 0x08: return .previousTrack
+            case 0x09: return .nextTrack
+            case 0x0A, 0x16: return .ancToggle
+            case 0x0B: return .voiceAssistant
+            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1D, 0x1F...0x25, 0x27, 0x28:
+                return .customAction
             default: return nil
         }
     }
