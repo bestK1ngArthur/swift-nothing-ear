@@ -35,6 +35,7 @@ extension EnhancedBass: DeviceCapability {
                  .ear3A,
                  .earStick,
                  .earOpen,
+                 .headphone1Pro,
                  .cmfBudsPro:
                 false
         }

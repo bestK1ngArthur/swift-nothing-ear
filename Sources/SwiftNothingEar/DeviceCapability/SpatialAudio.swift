@@ -28,6 +28,7 @@ extension SpatialAudioMode: DeviceCapability {
             case .ear3,
                  .ear3A,
                  .headphone1,
+                 .headphone1Pro,
                  .headphoneA,
                  .cmfBudsNeo,
                  .cmfBuds2,
@@ -54,6 +55,7 @@ extension SpatialAudioMode: DeviceCapability {
     public static func allSupported(by model: DeviceModel) -> [Self] {
         switch model {
             case .headphone1,
+                 .headphone1Pro,
                  .headphoneA:
                 [.off, .fixed, .headTracking]
 
@@ -106,6 +108,7 @@ extension SpatialAudioMode: DeviceCapability {
                  .ear,
                  .earA,
                  .headphone1,
+                 .headphone1Pro,
                  .headphoneA:
                 false
         }

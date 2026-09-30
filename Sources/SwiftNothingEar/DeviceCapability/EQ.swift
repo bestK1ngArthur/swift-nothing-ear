@@ -38,6 +38,7 @@ extension EQPreset: DeviceCapability {
                  .earOpen,
                  .ear,
                  .headphone1,
+                 .headphone1Pro, // TODO: Add instrument preset
                  .headphoneA:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
 
@@ -146,6 +147,7 @@ extension DeviceModel {
 
         switch self {
             case .headphone1,
+                 .headphone1Pro,
                  .headphoneA,
                  .cmfHeadphonePro:
                 return spec3500
