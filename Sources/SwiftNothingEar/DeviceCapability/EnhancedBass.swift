@@ -35,7 +35,8 @@ extension EnhancedBass: DeviceCapability {
                  .cmfClipPro:
                 true
             case .ear3A,
-                 .earOpen:
+                 .earOpen,
+                 .headphone1Pro:
                 false
         }
     }
