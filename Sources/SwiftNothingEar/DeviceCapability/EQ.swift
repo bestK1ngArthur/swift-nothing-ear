@@ -40,6 +40,7 @@ extension EQPreset: DeviceCapability {
                  .ear,
                  .earA,
                  .headphone1,
+                 .headphone1Pro, // TODO: Add instrument preset
                  .headphoneA,
                  .cmfBuds,
                  .cmfBuds2a,
@@ -144,6 +145,7 @@ extension DeviceModel {
 
         switch self {
             case .headphone1,
+                 .headphone1Pro,
                  .headphoneA,
                  .cmfHeadphonePro:
                 return spec3500
