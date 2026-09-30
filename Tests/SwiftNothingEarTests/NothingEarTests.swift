@@ -209,4 +209,16 @@ final class NothingEarTests: XCTestCase {
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
     }
+
+    func testInEarDetectionFindsFeatureTypeInAnyPosition() {
+        let inEarResponseBytes: [UInt8] = [
+            0x55, 0x60, 0x01, 0x0E, 0x40, 0x05, 0x00, 0x01,
+            0x02, 0x02, 0x01, 0x01, 0x00
+        ]
+        guard let inEarResponse = BluetoothResponse(data: inEarResponseBytes) else {
+            XCTFail("Failed to parse in-ear response")
+            return
+        }
+        XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
+    }
 }

@@ -63,23 +63,7 @@ final class NothingEar2Tests: XCTestCase {
     }
 
     func testEnhancedBass() {
-        let enhancedBassRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.enhancedBass, payload: [], operationID: 0x01)
-        XCTAssertEqual(enhancedBassRequest.toBytes(), [0x55, 0x60, 0x01, 0x4E, 0xC0, 0x00, 0x00, 0x01, 0x71, 0x11])
-
-        let enhancedBassWriteRequest = BluetoothRequest.setEnhancedBass(.init(isEnabled: true, level: 30), operationID: 0x01)
-        XCTAssertEqual(enhancedBassWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x51, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x3C, 0x77, 0x2C])
-
-        let enhancedBassResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x4E, 0x40, 0x02, 0x00, 0x01,
-            0x01, 0x3C
-        ]
-        guard let enhancedBassResponse = BluetoothResponse(data: enhancedBassResponseBytes) else {
-            XCTFail("Failed to parse enhanced bass response")
-            return
-        }
-        let enhancedBass = enhancedBassResponse.parseEnhancedBassSettings()
-        XCTAssertEqual(enhancedBass?.isEnabled, true)
-        XCTAssertEqual(enhancedBass?.level, 30)
+        XCTAssertFalse(EnhancedBass.isSupported(by: .ear2(.black)))
     }
 
     func testEQPreset() {

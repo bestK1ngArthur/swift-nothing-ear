@@ -101,21 +101,7 @@ final class CMFNeckbandProTests: XCTestCase {
     }
 
     func testInEarDetection() {
-        let inEarRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.inEarDetection, payload: [], operationID: 0x01)
-        XCTAssertEqual(inEarRequest.toBytes(), [0x55, 0x60, 0x01, 0x0E, 0xC0, 0x00, 0x00, 0x01, 0x70, 0xDE])
-
-        let inEarWriteRequest = BluetoothRequest.setInEarDetection(false, operationID: 0x01)
-        XCTAssertEqual(inEarWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x04, 0xF0, 0x03, 0x00, 0x01, 0x01, 0x01, 0x00, 0xB8, 0x64])
-
-        let inEarResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x0E, 0x40, 0x03, 0x00, 0x01,
-            0x01, 0x01, 0x00
-        ]
-        guard let inEarResponse = BluetoothResponse(data: inEarResponseBytes) else {
-            XCTFail("Failed to parse in-ear response")
-            return
-        }
-        XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
+        XCTAssertFalse(DeviceModel.cmfNeckbandPro(.black).supportsInEarDetection)
     }
 
     func testLowLatency() {
@@ -197,5 +183,11 @@ final class CMFNeckbandProTests: XCTestCase {
 
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
+    }
+
+    func testModelDetectionByAlternativeNames() {
+        XCTAssertEqual(DeviceModel.getModel(for: "Neckband Pro", serialNumber: ""), .cmfNeckbandPro(.black))
+        XCTAssertEqual(DeviceModel.getModel(for: "CMF Neckband Pro", serialNumber: ""), .cmfNeckbandPro(.black))
+        XCTAssertEqual(DeviceModel.getModel(for: "CMF Neckband", serialNumber: ""), .cmfNeckbandPro(.black))
     }
 }

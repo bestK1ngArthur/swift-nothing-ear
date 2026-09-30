@@ -49,7 +49,7 @@ enum BluetoothCommand {
         static let earFitTest: UInt16      = 57357 // 0xE00D
         static let enhancedBass: UInt16    = 16462 // 0x404E
         static let eqA: UInt16             = 16415 // 0x401F
-        static let eqB: UInt16             = 16464 // 0x4040
+        static let eqB: UInt16             = 16464 // 0x4050
         static let firmware: UInt16        = 16450 // 0x4042
         static let gesture: UInt16         = 16408 // 0x4018
         static let inEarDetection: UInt16  = 16398 // 0x400E
@@ -382,7 +382,9 @@ private extension BluetoothRequest {
         }
         let totalGain = -maxGain
 
-        let packetSize = 1 + 4 + (eqBands.count * 16) + (eqBands.count * 3)
+        // Matches Nothing X: the buffer is sized 16 bytes per band, while each band
+        // takes 13 bytes, so the packet ends with zero padding.
+        let packetSize = 1 + 4 + (eqBands.count * 16)
         var packet = [UInt8](repeating: 0, count: packetSize)
         var offset = 0
 
@@ -408,13 +410,6 @@ private extension BluetoothRequest {
             let qBytes = floatBytes(band.quality)
             packet[offset..<(offset + 4)] = qBytes[0..<4]
             offset += 4
-        }
-
-        for _ in eqBands {
-            packet[offset] = 0x00
-            packet[offset + 1] = 0x00
-            packet[offset + 2] = 0x00
-            offset += 3
         }
 
         return packet
@@ -500,16 +495,16 @@ extension BluetoothResponse {
     }
 
     func parseCustomEQPreset() -> EQPresetCustom? {
-        // Offsets are based on Nothing's custom EQ payload layout.
-        let bassOffset = 6
-        let midOffset = 19
-        let trebleOffset = 32
+        // Layout: [count, totalGain(4), (filterType, gain(4), frequency(4), quality(4)) * count].
+        // Bands are matched by filter type, not by position, like Nothing X does.
+        let headerSize = 5
+        let bandSize = 13
 
-        func readFloat(at offset: Int) -> Float? {
-            guard payload.count >= offset + 4 else {
-                return nil
-            }
+        guard payload.count >= headerSize else {
+            return nil
+        }
 
+        func readFloat(at offset: Int) -> Float {
             let raw = UInt32(payload[offset])
                 | (UInt32(payload[offset + 1]) << 8)
                 | (UInt32(payload[offset + 2]) << 16)
@@ -517,10 +512,18 @@ extension BluetoothResponse {
             return Float(bitPattern: raw)
         }
 
+        let bandCount = min(Int(payload[0]), (payload.count - headerSize) / bandSize)
+        var gains: [UInt8: Float] = [:]
+
+        for i in 0..<bandCount {
+            let offset = headerSize + (i * bandSize)
+            gains[payload[offset]] = readFloat(at: offset + 1)
+        }
+
         guard
-            let bassValue = readFloat(at: bassOffset),
-            let midValue = readFloat(at: midOffset),
-            let trebleValue = readFloat(at: trebleOffset)
+            let bassValue = gains[0x00],   // LOW_SHELF
+            let midValue = gains[0x01],    // PEAK
+            let trebleValue = gains[0x02]  // HIGH_SHELF
         else {
             return nil
         }
@@ -707,11 +710,21 @@ extension BluetoothResponse {
     // MARK: Device Settings
 
     func parseInEarDetection() -> Bool? {
+        // Layout: [count, (featureType, isEnabled) * count]; in-ear detection is feature type 0x01.
         guard payload.count >= 3 else {
             return nil
         }
 
-        return payload[2] != 0
+        let featureCount = min(Int(payload[0]), (payload.count - 1) / 2)
+
+        for i in 0..<featureCount {
+            let offset = 1 + (i * 2)
+            if payload[offset] == 0x01 {
+                return payload[offset + 1] != 0
+            }
+        }
+
+        return nil
     }
 
     func parseLowLatency() -> Bool? {
@@ -728,7 +741,7 @@ extension BluetoothResponse {
         }
 
         let enabled = payload[0] != 0
-        let level = Int(payload[1]) / 2 // Convert from 0-200 to 0-100
+        let level = Int(payload[1]) / 2 // Device reports 2, 4, 6, 8, 10 for levels 1-5
 
         return .init(isEnabled: enabled, level: level)
     }

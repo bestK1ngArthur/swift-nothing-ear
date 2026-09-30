@@ -180,4 +180,11 @@ final class NothingEarATests: XCTestCase {
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
     }
+
+    func testSupportedEQPresets() {
+        XCTAssertEqual(
+            EQPreset.allSupported(by: .earA(.black)),
+            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+        )
+    }
 }

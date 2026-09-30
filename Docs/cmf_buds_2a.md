@@ -19,7 +19,7 @@
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
 | **Equalizer / Listening Mode** | 🟢 | Read and set presets or listening modes |
 | **Gesture Controls** | 🟢 | Read and configure gesture bindings |
-| **In-Ear Detection** | 🟢 | Read and toggle |
+| **In-Ear Detection** | ⚫ | Not supported by device |
 | **Personalized ANC** | 🟡 | Available in device settings |
 | **Low Latency Mode** | 🟢 | Read and set |
 | **Find My Earbuds** | 🟢 | Read and set |

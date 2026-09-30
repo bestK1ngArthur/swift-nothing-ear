@@ -103,21 +103,7 @@ final class CMFHeadphoneProTests: XCTestCase {
     }
 
     func testInEarDetection() {
-        let inEarRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.inEarDetection, payload: [], operationID: 0x01)
-        XCTAssertEqual(inEarRequest.toBytes(), [0x55, 0x60, 0x01, 0x0E, 0xC0, 0x00, 0x00, 0x01, 0x70, 0xDE])
-
-        let inEarWriteRequest = BluetoothRequest.setInEarDetection(true, operationID: 0x01)
-        XCTAssertEqual(inEarWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x04, 0xF0, 0x03, 0x00, 0x01, 0x01, 0x01, 0x01, 0x79, 0xA4])
-
-        let inEarResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x0E, 0x40, 0x03, 0x00, 0x01,
-            0x01, 0x01, 0x01
-        ]
-        guard let inEarResponse = BluetoothResponse(data: inEarResponseBytes) else {
-            XCTFail("Failed to parse in-ear response")
-            return
-        }
-        XCTAssertEqual(inEarResponse.parseInEarDetection(), true)
+        XCTAssertFalse(DeviceModel.cmfHeadphonePro(.darkGrey).supportsInEarDetection)
     }
 
     func testLowLatency() {
@@ -199,5 +185,12 @@ final class CMFHeadphoneProTests: XCTestCase {
 
         assertCustomEQWrite(for: model, preset: preset)
         assertCustomEQRead(preset: preset)
+    }
+
+    func testSupportedEQPresets() {
+        XCTAssertEqual(
+            EQPreset.allSupported(by: .cmfHeadphonePro(.darkGrey)),
+            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+        )
     }
 }

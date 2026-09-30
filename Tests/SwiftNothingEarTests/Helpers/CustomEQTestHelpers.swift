@@ -11,7 +11,7 @@ func assertCustomEQWrite(
     let request = BluetoothRequest.setCustomEQPreset(preset, specs: specs, operationID: 0x01)
 
     XCTAssertEqual(request.command, BluetoothCommand.RequestWrite.customEQ, file: file, line: line)
-    XCTAssertEqual(request.payload.count, 62, file: file, line: line)
+    XCTAssertEqual(request.payload.count, 53, file: file, line: line)
     XCTAssertEqual(request.payload.first, 0x03, file: file, line: line)
 
     let maxGain = max(
@@ -48,26 +48,32 @@ func assertCustomEQRead(
     file: StaticString = #filePath,
     line: UInt = #line
 ) {
-    let payload = customEQReadPayload(
-        bass: Float(preset.bass),
-        mid: Float(preset.mid),
-        treble: Float(preset.treble)
-    )
-    let responseBytes = customEQResponseBytes(payload: payload)
+    // Bands are matched by filter type, so both the written order (peak, high, low)
+    // and the reversed order must decode to the same preset.
+    let bands: [(filterType: UInt8, gain: Float)] = [
+        (0x01, Float(preset.mid)),
+        (0x02, Float(preset.treble)),
+        (0x00, Float(preset.bass))
+    ]
 
-    guard let response = BluetoothResponse(data: responseBytes) else {
-        XCTFail("Failed to parse custom EQ response", file: file, line: line)
-        return
+    for order in [bands, bands.reversed()] {
+        let payload = customEQReadPayload(bands: order)
+        let responseBytes = customEQResponseBytes(payload: payload)
+
+        guard let response = BluetoothResponse(data: responseBytes) else {
+            XCTFail("Failed to parse custom EQ response", file: file, line: line)
+            return
+        }
+
+        guard let parsed = response.parseCustomEQPreset() else {
+            XCTFail("Failed to parse custom EQ payload", file: file, line: line)
+            return
+        }
+
+        XCTAssertEqual(parsed.bass, preset.bass, file: file, line: line)
+        XCTAssertEqual(parsed.mid, preset.mid, file: file, line: line)
+        XCTAssertEqual(parsed.treble, preset.treble, file: file, line: line)
     }
-
-    guard let parsed = response.parseCustomEQPreset() else {
-        XCTFail("Failed to parse custom EQ payload", file: file, line: line)
-        return
-    }
-
-    XCTAssertEqual(parsed.bass, preset.bass, file: file, line: line)
-    XCTAssertEqual(parsed.mid, preset.mid, file: file, line: line)
-    XCTAssertEqual(parsed.treble, preset.treble, file: file, line: line)
 }
 
 private struct EQBandView {
@@ -112,11 +118,16 @@ private func readFloat(from payload: [UInt8], offset: Int) -> Float {
     return Float(bitPattern: raw)
 }
 
-private func customEQReadPayload(bass: Float, mid: Float, treble: Float) -> [UInt8] {
-    var payload = [UInt8](repeating: 0, count: 36)
-    writeFloat(bass, into: &payload, offset: 6)
-    writeFloat(mid, into: &payload, offset: 19)
-    writeFloat(treble, into: &payload, offset: 32)
+private func customEQReadPayload(bands: [(filterType: UInt8, gain: Float)]) -> [UInt8] {
+    var payload = [UInt8](repeating: 0, count: 5 + (bands.count * 13))
+    payload[0] = UInt8(bands.count)
+
+    for (index, band) in bands.enumerated() {
+        let offset = 5 + (index * 13)
+        payload[offset] = band.filterType
+        writeFloat(band.gain, into: &payload, offset: offset + 1)
+    }
+
     return payload
 }
 
