@@ -407,8 +407,8 @@ private extension BluetoothRequest {
         }
         let totalGain = -maxGain
 
-        // Matches Nothing X: the buffer is sized 16 bytes per band, while each band
-        // takes 13 bytes, so the packet ends with zero padding.
+        // The buffer is sized 16 bytes per band, while each band takes 13 bytes,
+        // so the packet ends with zero padding.
         let packetSize = 1 + 4 + (eqBands.count * 16)
         var packet = [UInt8](repeating: 0, count: packetSize)
         var offset = 0
@@ -529,7 +529,7 @@ extension BluetoothResponse {
 
     func parseCustomEQPreset() -> EQPresetCustom? {
         // Layout: [count, totalGain(4), (filterType, gain(4), frequency(4), quality(4)) * count].
-        // Bands are matched by filter type, not by position, like Nothing X does.
+        // Bands are matched by filter type, not by position.
         let headerSize = 5
         let bandSize = 13
 
@@ -999,7 +999,7 @@ extension GestureType {
 
 extension GestureAction {
 
-    // Operation codes from Nothing X `ControlConfigurationEntity`.
+    // Gesture operation codes.
     func rawValue8(for type: GestureType) -> UInt8 {
         switch self {
             case .none: return 0x01
