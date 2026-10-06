@@ -17,7 +17,7 @@
 | **Active Noise Cancellation** | 🟢 | Read and change ANC mode; no adaptive level |
 | **Spatial Audio** | ⚫ | Not supported by device |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
-| **Equalizer / Listening Mode** | 🟢 | Read and set presets or listening modes |
+| **Equalizer Presets** | 🟡 | Listening modes: Balanced, Pop, Rock, Electronic, Enhance Vocals, Classical, Custom; switching needs a device check |
 | **Gesture Controls** | 🟢 | Read and configure gesture bindings |
 | **In-Ear Detection** | ⚫ | Not supported by device |
 | **Personalized ANC** | 🟡 | Available in device settings |

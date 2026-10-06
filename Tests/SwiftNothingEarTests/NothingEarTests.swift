@@ -69,9 +69,9 @@ final class NothingEarTests: XCTestCase {
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
 
         // 0x06 is New Voice; advanced EQ has its own mode command.
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.newVoice, operationID: 0x01)
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.newVoice, for: .ear(.black), operationID: 0x01)
         XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x06, 0x00, 0x24, 0x09])
-        XCTAssertNil(BluetoothRequest.setEQPreset(.advanced, operationID: 0x01))
+        XCTAssertNil(BluetoothRequest.setEQPreset(.advanced, for: .ear(.black), operationID: 0x01))
 
         let eqResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
@@ -81,7 +81,7 @@ final class NothingEarTests: XCTestCase {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .newVoice)
+        XCTAssertEqual(eqResponse.parseEQPreset(for: .ear(.black)), .newVoice)
     }
 
     func testAdvancedEQ() {

@@ -1,12 +1,22 @@
 import Foundation
 
 public enum EQPreset: CaseIterable, Sendable {
+    // Nothing presets
     case balanced
     case voice
     case moreTreble
     case moreBass
     case newVoice
     case newInstrument
+
+    // Genre presets of CMF models
+    case immersionBoost
+    case pop
+    case rock
+    case electronic
+    case enhanceVocals
+    case classical
+
     case custom
     /// Advanced EQ is a separate mode on the device rather than a preset value:
     /// it is reported while the mode is on, and selecting another preset turns it off.
@@ -23,6 +33,12 @@ extension EQPreset {
             case .moreBass: return "More Bass"
             case .newVoice: return "New Voice"
             case .newInstrument: return "New Instrument"
+            case .immersionBoost: return "Immersion Boost"
+            case .pop: return "Pop"
+            case .rock: return "Rock"
+            case .electronic: return "Electronic"
+            case .enhanceVocals: return "Enhance Vocals"
+            case .classical: return "Classical"
             case .custom: return "Custom"
             case .advanced: return "Advanced"
         }
@@ -50,17 +66,20 @@ extension EQPreset: DeviceCapability {
             case .headphone1Pro:
                 [.balanced, .voice, .moreTreble, .moreBass, .newInstrument, .custom, .advanced]
 
+            // Models with genre presets
             case .cmfBuds,
-                 .cmfBudsNeo,
                  .cmfBuds2a,
                  .cmfBuds2,
-                 .cmfBuds2Plus,
-                 .cmfBudsPro2,
+                 .cmfBudsPro2:
+                [.balanced, .pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
+
+            case .cmfBudsNeo:
+                [.immersionBoost, .pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
+
+            case .cmfBuds2Plus,
                  .cmfHeadphonePro,
                  .cmfClipPro:
-                // The device also exposes genre presets that are not represented
-                // by EQPreset yet. Advanced EQ is not supported by the device.
-                [.balanced, .voice, .moreTreble, .moreBass, .custom]
+                [.pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
 
             case .earA,
                  .cmfBudsPro,
@@ -77,6 +96,7 @@ extension EQPreset: DeviceCapability {
 
 extension DeviceModel {
 
+    /// Whether presets are listening modes (0xC050/0xF01D) instead of EQ modes.
     var supportsListeningMode: Bool {
         switch self {
             case .cmfBuds,
@@ -84,7 +104,9 @@ extension DeviceModel {
                  .cmfBuds2a,
                  .cmfBuds2,
                  .cmfBuds2Plus,
-                 .cmfBudsPro2:
+                 .cmfBudsPro2,
+                 .cmfHeadphonePro,
+                 .cmfClipPro:
                 return true
             default:
                 return false

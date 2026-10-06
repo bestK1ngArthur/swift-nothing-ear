@@ -224,17 +224,21 @@ extension BluetoothRequest {
         )
     }
 
-    /// Returns `nil` for `.advanced`, which is switched with `setAdvancedEQ(_:operationID:)`.
+    /// Returns `nil` for presets the model has no value for, including `.advanced`,
+    /// which is switched with `setAdvancedEQ(_:operationID:)`.
     static func setEQPreset(
         _ preset: EQPreset,
+        for model: DeviceModel,
         operationID: UInt8
     ) -> Self? {
-        guard let value = preset.rawValue8 else {
+        guard let value = preset.rawValue8(for: model) else {
             return nil
         }
 
         return Self(
-            command: BluetoothCommand.RequestWrite.eq,
+            command: model.supportsListeningMode
+                ? BluetoothCommand.RequestWrite.listeningMode
+                : BluetoothCommand.RequestWrite.eq,
             payload: [value, 0x00],
             operationID: operationID
         )
@@ -505,11 +509,11 @@ extension BluetoothResponse {
         return .from8BitValue(payload[1])
     }
 
-    func parseEQPreset() -> EQPreset? {
+    func parseEQPreset(for model: DeviceModel) -> EQPreset? {
         if payload.count > 1 {
-            return .from8BitValue(payload[1])
+            return .from8BitValue(payload[1], for: model)
         } else if payload.count == 1 {
-            return .from8BitValue(payload[0])
+            return .from8BitValue(payload[0], for: model)
         } else {
             return nil
         }
@@ -883,8 +887,30 @@ extension SpatialAudioMode {
 
 extension EQPreset {
 
-    // EQ mode values. Advanced EQ has no value here: it is a separate mode.
-    var rawValue8: UInt8? {
+    // Values for EQ modes and for listening modes.
+    // Advanced EQ has no value here: it is a separate mode.
+    func rawValue8(for model: DeviceModel) -> UInt8? {
+        if model.supportsListeningMode {
+            guard EQPreset.allSupported(by: model).contains(self) else {
+                return nil
+            }
+
+            switch self {
+                case .balanced:
+                    // Buds 2a uses a different value for its default sound.
+                    if case .cmfBuds2a = model { return 0x07 }
+                    return 0x00
+                case .rock: return 0x01
+                case .electronic: return 0x02
+                case .pop: return 0x03
+                case .enhanceVocals: return 0x04
+                case .classical: return 0x05
+                case .custom: return 0x06
+                case .immersionBoost: return 0x08
+                default: return nil
+            }
+        }
+
         switch self {
             case .balanced: return 0x00
             case .voice: return 0x01
@@ -893,11 +919,25 @@ extension EQPreset {
             case .custom: return 0x05
             case .newVoice: return 0x06
             case .newInstrument: return 0x07
-            case .advanced: return nil
+            default: return nil
         }
     }
 
-    static func from8BitValue(_ value: UInt8) -> Self? {
+    static func from8BitValue(_ value: UInt8, for model: DeviceModel) -> Self? {
+        if model.supportsListeningMode {
+            switch value {
+                case 0x00, 0x07: return .balanced
+                case 0x01: return .rock
+                case 0x02: return .electronic
+                case 0x03: return .pop
+                case 0x04: return .enhanceVocals
+                case 0x05: return .classical
+                case 0x06: return .custom
+                case 0x08: return .immersionBoost
+                default: return nil
+            }
+        }
+
         switch value {
             case 0x00: return .balanced
             case 0x01: return .voice

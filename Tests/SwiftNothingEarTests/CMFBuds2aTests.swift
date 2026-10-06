@@ -47,8 +47,13 @@ final class CMFBuds2aTests: XCTestCase {
     func testSupportedEQPresets() {
         XCTAssertEqual(
             EQPreset.allSupported(by: .cmfBuds2a(.darkGrey)),
-            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+            [.balanced, .pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
         )
+
+        // Buds 2a uses 7 rather than 0 for its default sound.
+        let balancedWriteRequest = BluetoothRequest.setEQPreset(.balanced, for: .cmfBuds2a(.darkGrey), operationID: 0x01)
+        XCTAssertEqual(balancedWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x1D, 0xF0, 0x02, 0x00, 0x01, 0x07, 0x00, 0xF9, 0x59])
+        XCTAssertEqual(EQPreset.from8BitValue(0x07, for: .cmfBuds2a(.darkGrey)), .balanced)
     }
 
     func testSupportedANCModes() {

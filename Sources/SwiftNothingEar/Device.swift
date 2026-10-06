@@ -311,7 +311,7 @@ extension Device {
             return
         }
 
-        guard let request = BluetoothRequest.setEQPreset(preset, operationID: nextOperationID()) else {
+        guard let request = BluetoothRequest.setEQPreset(preset, for: deviceInfo.model, operationID: nextOperationID()) else {
             callback.onError(.unsupportedOperation)
             return
         }
@@ -865,7 +865,7 @@ extension Device {
 
             case BluetoothCommand.Response.eqA,
                 BluetoothCommand.Response.eqB:
-                if let eqPreset = response.parseEQPreset() {
+                if let deviceInfo, let eqPreset = response.parseEQPreset(for: deviceInfo.model) {
                     lastEQModePreset = eqPreset
                     Logger.parsing.info("🎵 Parsed EQ preset: \(String(describing: eqPreset), privacy: .public)")
                     updateEQPreset()
