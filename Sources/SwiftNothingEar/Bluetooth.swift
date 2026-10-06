@@ -23,7 +23,7 @@ enum BluetoothCommand {
     }
 
     enum RequestWrite {
-        static let advancedEQ: UInt16      = 61519 // 0xF06F
+        static let advancedEQ: UInt16      = 61519 // 0xF04F
         static let anc: UInt16             = 61455 // 0xF00F
         static let customEQ: UInt16        = 61505 // 0xF041
         static let earFitTest: UInt16      = 61460 // 0xF014
@@ -224,14 +224,29 @@ extension BluetoothRequest {
         )
     }
 
+    /// Returns `nil` for `.advanced`, which is switched with `setAdvancedEQ(_:operationID:)`.
     static func setEQPreset(
         _ preset: EQPreset,
         operationID: UInt8
-    ) -> Self {
-        let payload: [UInt8] = [preset.rawValue8, 0x00]
+    ) -> Self? {
+        guard let value = preset.rawValue8 else {
+            return nil
+        }
+
         return Self(
             command: BluetoothCommand.RequestWrite.eq,
-            payload: payload,
+            payload: [value, 0x00],
+            operationID: operationID
+        )
+    }
+
+    static func setAdvancedEQ(
+        _ isEnabled: Bool,
+        operationID: UInt8
+    ) -> Self {
+        Self(
+            command: BluetoothCommand.RequestWrite.advancedEQ,
+            payload: [isEnabled ? 0x01 : 0x00, 0x00],
             operationID: operationID
         )
     }
@@ -498,6 +513,14 @@ extension BluetoothResponse {
         } else {
             return nil
         }
+    }
+
+    func parseAdvancedEQ() -> Bool? {
+        guard let value = payload.first else {
+            return nil
+        }
+
+        return value == 0x01
     }
 
     func parseCustomEQPreset() -> EQPresetCustom? {
@@ -860,14 +883,17 @@ extension SpatialAudioMode {
 
 extension EQPreset {
 
-    var rawValue8: UInt8 {
+    // EQ mode values. Advanced EQ has no value here: it is a separate mode.
+    var rawValue8: UInt8? {
         switch self {
             case .balanced: return 0x00
             case .voice: return 0x01
             case .moreTreble: return 0x02
             case .moreBass: return 0x03
             case .custom: return 0x05
-            case .advanced: return 0x06
+            case .newVoice: return 0x06
+            case .newInstrument: return 0x07
+            case .advanced: return nil
         }
     }
 
@@ -877,8 +903,9 @@ extension EQPreset {
             case 0x01: return .voice
             case 0x02: return .moreTreble
             case 0x03: return .moreBass
-            case 0x05: return .custom // TODO: To parse custom settings
-            case 0x06: return .advanced
+            case 0x05: return .custom
+            case 0x06: return .newVoice
+            case 0x07: return .newInstrument
             default: return nil
         }
     }

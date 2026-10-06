@@ -5,7 +5,11 @@ public enum EQPreset: CaseIterable, Sendable {
     case voice
     case moreTreble
     case moreBass
+    case newVoice
+    case newInstrument
     case custom
+    /// Advanced EQ is a separate mode on the device rather than a preset value:
+    /// it is reported while the mode is on, and selecting another preset turns it off.
     case advanced
 }
 
@@ -17,6 +21,8 @@ extension EQPreset {
             case .voice: return "Voice"
             case .moreTreble: return "More Treble"
             case .moreBass: return "More Bass"
+            case .newVoice: return "New Voice"
+            case .newInstrument: return "New Instrument"
             case .custom: return "Custom"
             case .advanced: return "Advanced"
         }
@@ -38,9 +44,11 @@ extension EQPreset: DeviceCapability {
                  .earOpen,
                  .ear,
                  .headphone1,
-                 .headphone1Pro, // TODO: Add instrument preset
                  .headphoneA:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
+
+            case .headphone1Pro:
+                [.balanced, .voice, .moreTreble, .moreBass, .newInstrument, .custom, .advanced]
 
             case .cmfBuds,
                  .cmfBudsNeo,

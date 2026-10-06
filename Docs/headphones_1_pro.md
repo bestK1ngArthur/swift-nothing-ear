@@ -17,7 +17,7 @@
 | **Active Noise Cancellation** | 🟡 | Read and change mode; real response capture needed |
 | **Spatial Audio** | 🟡 | Read and change mode (off, fixed, head-tracking); the app may route it through Audiodo, capture needed |
 | **Enhanced Bass** | ⚫ | Not supported by device |
-| **Equalizer Presets** | 🟡 | Basic package presets are available; the device-specific Instrument preset is not represented yet |
+| **Equalizer Presets** | 🟡 | Read and set EQ presets, including New Instrument; real response capture needed |
 | **Custom Equalizer** | 🟢 | Uses 140/980/3500 Hz custom EQ bands |
 | **Gesture Controls** | 🔴 | Supported by device, but not implemented by this package |
 | **In-Ear Detection** | 🟡 | Read and set; real response capture needed |

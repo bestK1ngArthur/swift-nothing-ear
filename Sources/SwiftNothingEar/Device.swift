@@ -90,6 +90,9 @@ public final class Device: NSObject {
     public private(set) var spatialAudio: SpatialAudioMode?
     public private(set) var ringBuds: RingBuds?
 
+    private var lastEQModePreset: EQPreset?
+    private var isAdvancedEQEnabled = false
+
     private let callback: Callback
 
     // Fast Pair service UUID for discovering Nothing devices
@@ -295,12 +298,31 @@ extension Device {
             return
         }
 
-        sendRequest(
-            .setEQPreset(
-                preset,
-                operationID: nextOperationID()
-            )
-        )
+        let supportsAdvancedEQ = EQPreset.allSupported(by: deviceInfo.model).contains(.advanced)
+
+        if preset == .advanced {
+            guard supportsAdvancedEQ else {
+                callback.onError(.unsupportedOperation)
+                return
+            }
+
+            isAdvancedEQEnabled = true
+            sendRequest(.setAdvancedEQ(true, operationID: nextOperationID()))
+            return
+        }
+
+        guard let request = BluetoothRequest.setEQPreset(preset, operationID: nextOperationID()) else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
+        if supportsAdvancedEQ {
+            // Leave advanced EQ before applying a preset.
+            isAdvancedEQEnabled = false
+            sendRequest(.setAdvancedEQ(false, operationID: nextOperationID()))
+        }
+
+        sendRequest(request)
     }
 
     public func setCustomEQPreset(_ preset: EQPresetCustom) {
@@ -460,6 +482,8 @@ extension Device {
         hasReceivedDeviceIdentity = false
         hasReceivedFirmware = false
         isInitialConnectionComplete = false
+        lastEQModePreset = nil
+        isAdvancedEQEnabled = false
 
         // Cancel any existing timeout task
         connectionTimeoutTask?.cancel()
@@ -525,6 +549,7 @@ extension Device {
             sendEnhancedBassRequest,
             sendReadANCRequest,
             sendReadEQRequest,
+            sendReadAdvancedEQRequest,
             sendReadBatteryRequest,
             sendReadGestureRequest,
             sendReadSpatialAudioRequest,
@@ -588,6 +613,24 @@ extension Device {
             : BluetoothCommand.RequestRead.eq
         let request = BluetoothRequest(
             command: command,
+            payload: [],
+            operationID: nextOperationID()
+        )
+        sendRequest(request)
+    }
+
+    private func sendReadAdvancedEQRequest() {
+        guard
+            let deviceInfo,
+            EQPreset.allSupported(by: deviceInfo.model).contains(.advanced)
+        else {
+            return
+        }
+
+        Logger.bluetooth.debug("🎚️ Sending read advanced EQ request")
+
+        let request = BluetoothRequest(
+            command: BluetoothCommand.RequestRead.advancedEQ,
             payload: [],
             operationID: nextOperationID()
         )
@@ -823,11 +866,20 @@ extension Device {
             case BluetoothCommand.Response.eqA,
                 BluetoothCommand.Response.eqB:
                 if let eqPreset = response.parseEQPreset() {
-                    self.eqPreset = eqPreset
-                    callback.onUpdateEQPreset(eqPreset)
+                    lastEQModePreset = eqPreset
                     Logger.parsing.info("🎵 Parsed EQ preset: \(String(describing: eqPreset), privacy: .public)")
+                    updateEQPreset()
                 } else {
                     Logger.parsing.warning("🎵 Failed to parse EQ preset")
+                }
+
+            case BluetoothCommand.Response.advancedEQ:
+                if let isEnabled = response.parseAdvancedEQ() {
+                    isAdvancedEQEnabled = isEnabled
+                    Logger.parsing.info("🎚️ Parsed advanced EQ: \(isEnabled ? "enabled" : "disabled", privacy: .public)")
+                    updateEQPreset()
+                } else {
+                    Logger.parsing.warning("🎚️ Failed to parse advanced EQ")
                 }
 
             case BluetoothCommand.Response.customEQ:
@@ -888,6 +940,16 @@ extension Device {
             default:
                 Logger.parsing.warning("❓ Unknown response: command = \(response.command, privacy: .public), payload = \(response.payload.map { String(format: "%02X", $0) } .joined(separator: " "), privacy: .public)")
         }
+    }
+
+    /// Advanced EQ is a separate mode, so it takes precedence over the preset the device reports.
+    private func updateEQPreset() {
+        guard let eqPreset = isAdvancedEQEnabled ? .advanced : lastEQModePreset else {
+            return
+        }
+
+        self.eqPreset = eqPreset
+        callback.onUpdateEQPreset(eqPreset)
     }
 
     private func updateDeviceInfo(_ update: (inout DeviceInfo) -> Void) {

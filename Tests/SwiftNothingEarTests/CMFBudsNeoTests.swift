@@ -159,7 +159,7 @@ final class CMFBudsNeoTests: XCTestCase {
 
         let eqWriteRequest = BluetoothRequest.setEQPreset(.balanced, operationID: 0x01)
         XCTAssertEqual(
-            eqWriteRequest.toBytes(),
+            eqWriteRequest?.toBytes(),
             [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x27, 0xA9]
         )
 
