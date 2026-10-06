@@ -176,4 +176,9 @@ final class CMFBudsProTests: XCTestCase {
         XCTAssertEqual(DeviceModel.getModel(for: "Buds Pro", serialNumber: ""), .cmfBudsPro(.black))
         XCTAssertEqual(DeviceModel.getModel(for: "CMF Buds Pro", serialNumber: ""), .cmfBudsPro(.black))
     }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .cmfBudsPro(.black)), [.low, .mid, .high])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .cmfBudsPro(.black)), [.active(.high), .transparent, .off])
+    }
 }

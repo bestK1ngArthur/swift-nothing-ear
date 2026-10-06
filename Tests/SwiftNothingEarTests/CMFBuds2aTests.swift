@@ -50,4 +50,9 @@ final class CMFBuds2aTests: XCTestCase {
             [.balanced, .voice, .moreTreble, .moreBass, .custom]
         )
     }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .cmfBuds2a(.darkGrey)), [.low, .mid, .high])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .cmfBuds2a(.darkGrey)), [.active(.high), .transparent, .off])
+    }
 }

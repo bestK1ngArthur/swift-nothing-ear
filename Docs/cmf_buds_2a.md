@@ -14,7 +14,7 @@
 | **Connection** | 🟢 | Bluetooth connection and device discovery |
 | **Device Info** | 🟢 | Serial number, firmware version, bluetooth address |
 | **Battery Status** | 🟢 | Read battery level and charging status |
-| **Active Noise Cancellation** | 🟢 | Read and change ANC mode |
+| **Active Noise Cancellation** | 🟢 | Read and change ANC mode; no adaptive level |
 | **Spatial Audio** | ⚫ | Not supported by device |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
 | **Equalizer / Listening Mode** | 🟢 | Read and set presets or listening modes |

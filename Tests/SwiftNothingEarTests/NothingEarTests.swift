@@ -245,4 +245,9 @@ final class NothingEarTests: XCTestCase {
         }
         XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
     }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .ear(.black)), [.low, .mid, .high, .adaptive])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .ear(.black)), [.active(.adaptive), .transparent, .off])
+    }
 }

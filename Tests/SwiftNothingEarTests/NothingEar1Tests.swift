@@ -183,4 +183,9 @@ final class NothingEar1Tests: XCTestCase {
             [.balanced, .voice, .moreTreble, .moreBass]
         )
     }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .ear1(.black)), [.low, .high])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .ear1(.black)), [.active(.high), .transparent, .off])
+    }
 }
