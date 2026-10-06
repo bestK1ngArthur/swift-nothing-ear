@@ -68,8 +68,10 @@ final class NothingEarTests: XCTestCase {
         let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.eq, payload: [], operationID: 0x01)
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.advanced, operationID: 0x01)
-        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x06, 0x00, 0x24, 0x09])
+        // 0x06 is New Voice; advanced EQ has its own mode command.
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.newVoice, for: .ear(.black), operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x06, 0x00, 0x24, 0x09])
+        XCTAssertNil(BluetoothRequest.setEQPreset(.advanced, for: .ear(.black), operationID: 0x01))
 
         let eqResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
@@ -79,7 +81,28 @@ final class NothingEarTests: XCTestCase {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .advanced)
+        XCTAssertEqual(eqResponse.parseEQPreset(for: .ear(.black)), .newVoice)
+    }
+
+    func testAdvancedEQ() {
+        let advancedRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.advancedEQ, payload: [], operationID: 0x01)
+        XCTAssertEqual(advancedRequest.toBytes(), [0x55, 0x60, 0x01, 0x4C, 0xC0, 0x00, 0x00, 0x01, 0x08, 0xD1])
+
+        let enableRequest = BluetoothRequest.setAdvancedEQ(true, operationID: 0x01)
+        XCTAssertEqual(enableRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x89, 0x3C])
+
+        let disableRequest = BluetoothRequest.setAdvancedEQ(false, operationID: 0x01)
+        XCTAssertEqual(disableRequest.toBytes(), [0x55, 0x60, 0x01, 0x4F, 0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x88, 0xAC])
+
+        let advancedResponseBytes: [UInt8] = [
+            0x55, 0x60, 0x01, 0x4C, 0x40, 0x01, 0x00, 0x01,
+            0x01
+        ]
+        guard let advancedResponse = BluetoothResponse(data: advancedResponseBytes) else {
+            XCTFail("Failed to parse advanced EQ response")
+            return
+        }
+        XCTAssertEqual(advancedResponse.parseAdvancedEQ(), true)
     }
 
     func testInEarDetection() {
@@ -244,5 +267,10 @@ final class NothingEarTests: XCTestCase {
             return
         }
         XCTAssertEqual(inEarResponse.parseInEarDetection(), false)
+    }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .ear(.black)), [.low, .mid, .high, .adaptive])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .ear(.black)), [.active(.adaptive), .transparent, .off])
     }
 }

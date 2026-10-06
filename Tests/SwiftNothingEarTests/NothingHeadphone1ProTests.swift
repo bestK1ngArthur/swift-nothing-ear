@@ -53,7 +53,7 @@ final class NothingHeadphone1ProTests: XCTestCase {
             XCTAssertFalse(model.supportsListeningMode)
             XCTAssertEqual(
                 EQPreset.allSupported(by: model),
-                [.balanced, .voice, .moreTreble, .moreBass, .custom, .advanced]
+                [.balanced, .voice, .moreTreble, .moreBass, .newInstrument, .custom, .advanced]
             )
         }
     }
@@ -137,10 +137,16 @@ final class NothingHeadphone1ProTests: XCTestCase {
             [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD]
         )
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreBass, operationID: 0x01)
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreBass, for: .headphone1Pro(.black), operationID: 0x01)
         XCTAssertEqual(
-            eqWriteRequest.toBytes(),
+            eqWriteRequest?.toBytes(),
             [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0x27, 0x59]
+        )
+
+        let instrumentWriteRequest = BluetoothRequest.setEQPreset(.newInstrument, for: .headphone1Pro(.black), operationID: 0x01)
+        XCTAssertEqual(
+            instrumentWriteRequest?.toBytes(),
+            [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x07, 0x00, 0x25, 0x99]
         )
 
         throw XCTSkip("Captured Nothing Headphone (1) Pro EQ response bytes are not available.")

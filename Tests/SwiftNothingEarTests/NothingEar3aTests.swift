@@ -85,8 +85,8 @@ final class NothingEar3aTests: XCTestCase {
         let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.eq, payload: [], operationID: 0x01)
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.voice, operationID: 0x01)
-        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x26, 0x39])
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.voice, for: .ear3A(.black), operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x26, 0x39])
 
         throw XCTSkip("Captured Nothing Ear (3a) EQ response bytes are not available.")
     }

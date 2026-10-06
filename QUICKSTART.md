@@ -131,8 +131,11 @@ if nothingEarDevice.isConnected {
 if let deviceInfo = nothingEarDevice.deviceInfo,
    NoiseCancellationMode.isSupported(by: deviceInfo.model) {
 
+    // Modes and active levels differ by model
+    let modes = NoiseCancellationMode.allSupported(by: deviceInfo.model)
+    let levels = NoiseCancellationMode.Active.allSupported(by: deviceInfo.model)
+
     nothingEarDevice.setANCMode(.active(.high))
-    nothingEarDevice.setANCMode(.active(.adaptive))
     nothingEarDevice.setANCMode(.transparent)
     nothingEarDevice.setANCMode(.off)
 }
@@ -140,12 +143,20 @@ if let deviceInfo = nothingEarDevice.deviceInfo,
 
 ## Equalizer
 
+Presets differ by model: Nothing models use Balanced, Voice, More Treble and More Bass, while most CMF models use listening modes such as Pop, Rock and Classical.
+
 ```swift
-nothingEarDevice.setEQPreset(.balanced)
-nothingEarDevice.setEQPreset(.moreBass)
-nothingEarDevice.setEQPreset(.moreTreble)
-nothingEarDevice.setEQPreset(.voice)
-nothingEarDevice.setEQPreset(.custom)
+if let deviceInfo = nothingEarDevice.deviceInfo {
+    let presets = EQPreset.allSupported(by: deviceInfo.model)
+
+    nothingEarDevice.setEQPreset(presets[0])
+    nothingEarDevice.setEQPreset(.custom)
+
+    // Advanced EQ is a separate mode; selecting any other preset turns it off
+    if presets.contains(.advanced) {
+        nothingEarDevice.setEQPreset(.advanced)
+    }
+}
 ```
 
 ## Gesture Control

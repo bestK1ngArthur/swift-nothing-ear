@@ -23,7 +23,7 @@ enum BluetoothCommand {
     }
 
     enum RequestWrite {
-        static let advancedEQ: UInt16      = 61519 // 0xF06F
+        static let advancedEQ: UInt16      = 61519 // 0xF04F
         static let anc: UInt16             = 61455 // 0xF00F
         static let customEQ: UInt16        = 61505 // 0xF041
         static let earFitTest: UInt16      = 61460 // 0xF014
@@ -224,14 +224,33 @@ extension BluetoothRequest {
         )
     }
 
+    /// Returns `nil` for presets the model has no value for, including `.advanced`,
+    /// which is switched with `setAdvancedEQ(_:operationID:)`.
     static func setEQPreset(
         _ preset: EQPreset,
+        for model: DeviceModel,
+        operationID: UInt8
+    ) -> Self? {
+        guard let value = preset.rawValue8(for: model) else {
+            return nil
+        }
+
+        return Self(
+            command: model.supportsListeningMode
+                ? BluetoothCommand.RequestWrite.listeningMode
+                : BluetoothCommand.RequestWrite.eq,
+            payload: [value, 0x00],
+            operationID: operationID
+        )
+    }
+
+    static func setAdvancedEQ(
+        _ isEnabled: Bool,
         operationID: UInt8
     ) -> Self {
-        let payload: [UInt8] = [preset.rawValue8, 0x00]
-        return Self(
-            command: BluetoothCommand.RequestWrite.eq,
-            payload: payload,
+        Self(
+            command: BluetoothCommand.RequestWrite.advancedEQ,
+            payload: [isEnabled ? 0x01 : 0x00, 0x00],
             operationID: operationID
         )
     }
@@ -388,8 +407,8 @@ private extension BluetoothRequest {
         }
         let totalGain = -maxGain
 
-        // Matches Nothing X: the buffer is sized 16 bytes per band, while each band
-        // takes 13 bytes, so the packet ends with zero padding.
+        // The buffer is sized 16 bytes per band, while each band takes 13 bytes,
+        // so the packet ends with zero padding.
         let packetSize = 1 + 4 + (eqBands.count * 16)
         var packet = [UInt8](repeating: 0, count: packetSize)
         var offset = 0
@@ -490,19 +509,27 @@ extension BluetoothResponse {
         return .from8BitValue(payload[1])
     }
 
-    func parseEQPreset() -> EQPreset? {
+    func parseEQPreset(for model: DeviceModel) -> EQPreset? {
         if payload.count > 1 {
-            return .from8BitValue(payload[1])
+            return .from8BitValue(payload[1], for: model)
         } else if payload.count == 1 {
-            return .from8BitValue(payload[0])
+            return .from8BitValue(payload[0], for: model)
         } else {
             return nil
         }
     }
 
+    func parseAdvancedEQ() -> Bool? {
+        guard let value = payload.first else {
+            return nil
+        }
+
+        return value == 0x01
+    }
+
     func parseCustomEQPreset() -> EQPresetCustom? {
         // Layout: [count, totalGain(4), (filterType, gain(4), frequency(4), quality(4)) * count].
-        // Bands are matched by filter type, not by position, like Nothing X does.
+        // Bands are matched by filter type, not by position.
         let headerSize = 5
         let bandSize = 13
 
@@ -860,25 +887,65 @@ extension SpatialAudioMode {
 
 extension EQPreset {
 
-    var rawValue8: UInt8 {
+    // Values for EQ modes and for listening modes.
+    // Advanced EQ has no value here: it is a separate mode.
+    func rawValue8(for model: DeviceModel) -> UInt8? {
+        if model.supportsListeningMode {
+            guard EQPreset.allSupported(by: model).contains(self) else {
+                return nil
+            }
+
+            switch self {
+                case .balanced:
+                    // Buds 2a uses a different value for its default sound.
+                    if case .cmfBuds2a = model { return 0x07 }
+                    return 0x00
+                case .rock: return 0x01
+                case .electronic: return 0x02
+                case .pop: return 0x03
+                case .enhanceVocals: return 0x04
+                case .classical: return 0x05
+                case .custom: return 0x06
+                case .immersionBoost: return 0x08
+                default: return nil
+            }
+        }
+
         switch self {
             case .balanced: return 0x00
             case .voice: return 0x01
             case .moreTreble: return 0x02
             case .moreBass: return 0x03
             case .custom: return 0x05
-            case .advanced: return 0x06
+            case .newVoice: return 0x06
+            case .newInstrument: return 0x07
+            default: return nil
         }
     }
 
-    static func from8BitValue(_ value: UInt8) -> Self? {
+    static func from8BitValue(_ value: UInt8, for model: DeviceModel) -> Self? {
+        if model.supportsListeningMode {
+            switch value {
+                case 0x00, 0x07: return .balanced
+                case 0x01: return .rock
+                case 0x02: return .electronic
+                case 0x03: return .pop
+                case 0x04: return .enhanceVocals
+                case 0x05: return .classical
+                case 0x06: return .custom
+                case 0x08: return .immersionBoost
+                default: return nil
+            }
+        }
+
         switch value {
             case 0x00: return .balanced
             case 0x01: return .voice
             case 0x02: return .moreTreble
             case 0x03: return .moreBass
-            case 0x05: return .custom // TODO: To parse custom settings
-            case 0x06: return .advanced
+            case 0x05: return .custom
+            case 0x06: return .newVoice
+            case 0x07: return .newInstrument
             default: return nil
         }
     }
@@ -932,7 +999,7 @@ extension GestureType {
 
 extension GestureAction {
 
-    // Operation codes from Nothing X `ControlConfigurationEntity`.
+    // Gesture operation codes.
     func rawValue8(for type: GestureType) -> UInt8 {
         switch self {
             case .none: return 0x01

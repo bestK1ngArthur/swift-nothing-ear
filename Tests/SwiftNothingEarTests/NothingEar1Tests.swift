@@ -70,8 +70,8 @@ final class NothingEar1Tests: XCTestCase {
         let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.eq, payload: [], operationID: 0x01)
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreBass, operationID: 0x01)
-        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0x27, 0x59])
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreBass, for: .ear1(.black), operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0x27, 0x59])
 
         let eqResponseBytes: [UInt8] = [
             0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
@@ -81,7 +81,7 @@ final class NothingEar1Tests: XCTestCase {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .moreBass)
+        XCTAssertEqual(eqResponse.parseEQPreset(for: .ear1(.black)), .moreBass)
     }
 
     func testInEarDetection() {
@@ -182,5 +182,10 @@ final class NothingEar1Tests: XCTestCase {
             EQPreset.allSupported(by: model),
             [.balanced, .voice, .moreTreble, .moreBass]
         )
+    }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .ear1(.black)), [.low, .high])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .ear1(.black)), [.active(.high), .transparent, .off])
     }
 }

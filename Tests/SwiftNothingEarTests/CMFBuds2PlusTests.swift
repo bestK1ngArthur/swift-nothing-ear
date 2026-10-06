@@ -43,7 +43,7 @@ final class CMFBuds2PlusTests: XCTestCase {
     func testSupportedEQPresets() {
         XCTAssertEqual(
             EQPreset.allSupported(by: .cmfBuds2Plus(.blue)),
-            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+            [.pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
         )
     }
 }

@@ -85,21 +85,22 @@ final class CMFHeadphoneProTests: XCTestCase {
     }
 
     func testEQPreset() {
-        let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.eq, payload: [], operationID: 0x01)
-        XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD])
+        let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.listeningMode, payload: [], operationID: 0x01)
+        XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x50, 0xC0, 0x00, 0x00, 0x01, 0xD9, 0x13])
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.balanced, operationID: 0x01)
-        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x27, 0xA9])
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.rock, for: .cmfHeadphonePro(.darkGrey), operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x1D, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0xFA, 0xF9])
+        XCTAssertNil(BluetoothRequest.setEQPreset(.balanced, for: .cmfHeadphonePro(.darkGrey), operationID: 0x01))
 
         let eqResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x1F, 0x40, 0x01, 0x00, 0x01,
-            0x00
+            0x55, 0x60, 0x01, 0x50, 0x40, 0x01, 0x00, 0x01,
+            0x01
         ]
         guard let eqResponse = BluetoothResponse(data: eqResponseBytes) else {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .balanced)
+        XCTAssertEqual(eqResponse.parseEQPreset(for: .cmfHeadphonePro(.darkGrey)), .rock)
     }
 
     func testInEarDetection() {
@@ -190,7 +191,7 @@ final class CMFHeadphoneProTests: XCTestCase {
     func testSupportedEQPresets() {
         XCTAssertEqual(
             EQPreset.allSupported(by: .cmfHeadphonePro(.darkGrey)),
-            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+            [.pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
         )
     }
 }

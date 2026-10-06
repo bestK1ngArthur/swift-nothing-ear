@@ -47,10 +47,10 @@ final class CMFClipProTests: XCTestCase {
             XCTAssertTrue(model.supportsCustomEQ)
             XCTAssertTrue(model.supportsRingBuds)
             XCTAssertFalse(model.supportsInEarDetection)
-            XCTAssertFalse(model.supportsListeningMode)
+            XCTAssertTrue(model.supportsListeningMode)
             XCTAssertEqual(
                 EQPreset.allSupported(by: model),
-                [.balanced, .voice, .moreTreble, .moreBass, .custom]
+                [.pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
             )
         }
     }
@@ -124,19 +124,19 @@ final class CMFClipProTests: XCTestCase {
 
     func testEQPreset() throws {
         let eqRequest = BluetoothRequest(
-            command: BluetoothCommand.RequestRead.eq,
+            command: BluetoothCommand.RequestRead.listeningMode,
             payload: [],
             operationID: 0x01
         )
         XCTAssertEqual(
             eqRequest.toBytes(),
-            [0x55, 0x60, 0x01, 0x1F, 0xC0, 0x00, 0x00, 0x01, 0x8C, 0xDD]
+            [0x55, 0x60, 0x01, 0x50, 0xC0, 0x00, 0x00, 0x01, 0xD9, 0x13]
         )
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.voice, operationID: 0x01)
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.enhanceVocals, for: .cmfClipPro(.darkGrey), operationID: 0x01)
         XCTAssertEqual(
-            eqWriteRequest.toBytes(),
-            [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x01, 0x00, 0x26, 0x39]
+            eqWriteRequest?.toBytes(),
+            [0x55, 0x60, 0x01, 0x1D, 0xF0, 0x02, 0x00, 0x01, 0x04, 0x00, 0xF9, 0xA9]
         )
 
         throw XCTSkip("Captured CMF Clip Pro EQ response bytes are not available.")

@@ -17,7 +17,7 @@
 | **Active Noise Cancellation** | 🟡 | Read and change ANC mode; real response capture needed |
 | **Spatial Audio** | 🟡 | Read and change static mode; real response capture needed |
 | **Ultra Bass** | 🟡 | Read/write with the standard bass boost protocol; real response capture needed |
-| **Equalizer Presets** | 🟡 | Basic package presets are available; device-specific genre presets are not represented yet |
+| **Equalizer Presets** | 🟡 | Listening modes: Immersion Boost, Pop, Rock, Electronic, Enhance Vocals, Classical, Custom; switching needs a device check |
 | **Custom Equalizer** | 🟢 | Uses 140/980/3400 Hz custom EQ bands |
 | **Gesture Controls** | 🟡 | Read and configure touch controls; real response capture needed |
 | **In-Ear Detection** | ⚫ | Not supported by device |

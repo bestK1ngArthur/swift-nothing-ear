@@ -68,18 +68,18 @@ final class CMFBudsTests: XCTestCase {
         let eqRequest = BluetoothRequest(command: BluetoothCommand.RequestRead.listeningMode, payload: [], operationID: 0x01)
         XCTAssertEqual(eqRequest.toBytes(), [0x55, 0x60, 0x01, 0x50, 0xC0, 0x00, 0x00, 0x01, 0xD9, 0x13])
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.moreTreble, operationID: 0x01)
-        XCTAssertEqual(eqWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x02, 0x00, 0x26, 0xC9])
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.pop, for: .cmfBuds(.black), operationID: 0x01)
+        XCTAssertEqual(eqWriteRequest?.toBytes(), [0x55, 0x60, 0x01, 0x1D, 0xF0, 0x02, 0x00, 0x01, 0x03, 0x00, 0xFB, 0x99])
 
         let eqResponseBytes: [UInt8] = [
-            0x55, 0x60, 0x01, 0x40, 0x40, 0x01, 0x00, 0x01,
-            0x02
+            0x55, 0x60, 0x01, 0x50, 0x40, 0x01, 0x00, 0x01,
+            0x03
         ]
         guard let eqResponse = BluetoothResponse(data: eqResponseBytes) else {
             XCTFail("Failed to parse EQ response")
             return
         }
-        XCTAssertEqual(eqResponse.parseEQPreset(), .moreTreble)
+        XCTAssertEqual(eqResponse.parseEQPreset(for: .cmfBuds(.black)), .pop)
     }
 
     func testInEarDetection() {
@@ -184,7 +184,12 @@ final class CMFBudsTests: XCTestCase {
     func testSupportedEQPresets() {
         XCTAssertEqual(
             EQPreset.allSupported(by: .cmfBuds(.black)),
-            [.balanced, .voice, .moreTreble, .moreBass, .custom]
+            [.balanced, .pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
         )
+    }
+
+    func testSupportedANCModes() {
+        XCTAssertEqual(NoiseCancellationMode.Active.allSupported(by: .cmfBuds(.black)), [.low, .mid, .high])
+        XCTAssertEqual(NoiseCancellationMode.allSupported(by: .cmfBuds(.black)), [.active(.high), .transparent, .off])
     }
 }

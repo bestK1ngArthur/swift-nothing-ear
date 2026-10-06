@@ -14,10 +14,10 @@
 | **Connection** | 🟢 | Bluetooth connection and device discovery |
 | **Device Info** | 🟢 | Serial number, firmware version, bluetooth address |
 | **Battery Status** | 🟢 | Read battery level and charging status |
-| **Active Noise Cancellation** | 🟢 | Read and change ANC mode |
+| **Active Noise Cancellation** | 🟢 | Read and change ANC mode; no adaptive level |
 | **Spatial Audio** | ⚫ | Not supported by device |
 | **Enhanced Bass** | 🟢 | Read/write and level changing (on/off, level 1-5) |
-| **Equalizer / Listening Mode** | 🟢 | Read and set presets or listening modes |
+| **Equalizer Presets** | 🟡 | Listening modes: Balanced, Pop, Rock, Electronic, Enhance Vocals, Classical, Custom; switching needs a device check |
 | **Gesture Controls** | 🟢 | Read and configure gesture bindings |
 | **In-Ear Detection** | ⚫ | Not supported by device |
 | **Personalized ANC** | 🟡 | Available in device settings |

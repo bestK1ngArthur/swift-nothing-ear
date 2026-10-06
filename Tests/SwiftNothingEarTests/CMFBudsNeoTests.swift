@@ -54,7 +54,7 @@ final class CMFBudsNeoTests: XCTestCase {
             XCTAssertTrue(model.supportsListeningMode)
             XCTAssertEqual(
                 EQPreset.allSupported(by: model),
-                [.balanced, .voice, .moreTreble, .moreBass, .custom]
+                [.immersionBoost, .pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
             )
         }
     }
@@ -157,10 +157,10 @@ final class CMFBudsNeoTests: XCTestCase {
             [0x55, 0x60, 0x01, 0x50, 0xC0, 0x00, 0x00, 0x01, 0xD9, 0x13]
         )
 
-        let eqWriteRequest = BluetoothRequest.setEQPreset(.balanced, operationID: 0x01)
+        let eqWriteRequest = BluetoothRequest.setEQPreset(.immersionBoost, for: .cmfBudsNeo(.darkGrey), operationID: 0x01)
         XCTAssertEqual(
-            eqWriteRequest.toBytes(),
-            [0x55, 0x60, 0x01, 0x10, 0xF0, 0x02, 0x00, 0x01, 0x00, 0x00, 0x27, 0xA9]
+            eqWriteRequest?.toBytes(),
+            [0x55, 0x60, 0x01, 0x1D, 0xF0, 0x02, 0x00, 0x01, 0x08, 0x00, 0xFC, 0xA9]
         )
 
         throw XCTSkip("Captured CMF Buds Neo EQ response bytes are not available.")
