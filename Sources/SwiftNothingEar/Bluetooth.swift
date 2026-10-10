@@ -43,6 +43,7 @@ enum BluetoothCommand {
         static let advancedEQ: UInt16      = 16460 // 0x404C
         static let ancA: UInt16            = 57347 // 0xE003
         static let ancB: UInt16            = 16414 // 0x401E
+        static let ancC: UInt16            = 24579 // 0x6003 — Headphone (a) ANC change notification
         static let batteryA: UInt16        = 57345 // 0xE001
         static let batteryB: UInt16        = 16391 // 0x4007
         static let customEQ: UInt16        = 16452 // 0x4044
