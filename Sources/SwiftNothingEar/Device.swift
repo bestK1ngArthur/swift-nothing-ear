@@ -845,7 +845,8 @@ extension Device {
                 }
 
             case BluetoothCommand.Response.ancA,
-                BluetoothCommand.Response.ancB:
+                BluetoothCommand.Response.ancB,
+                BluetoothCommand.Response.ancC:
                 if let ancMode = response.parseANCMode() {
                     self.ancMode = ancMode
                     callback.onUpdateNoiseCancellation(ancMode)
