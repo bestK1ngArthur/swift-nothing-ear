@@ -142,10 +142,17 @@ public final class Device: NSObject {
     private var isInitialConnectionComplete = false
     private var connectionTimeoutTask: Task<Void, Never>?
 
-    public init(_ callback: Callback) {
+    public convenience init(_ callback: Callback) {
+        self.init(callback, initializesBluetooth: true)
+    }
+
+    /// Allows response tests to run without creating a Bluetooth manager.
+    init(_ callback: Callback, initializesBluetooth: Bool) {
         self.callback = callback
         super.init()
-        self.centralManager = CBCentralManager(delegate: self, queue: nil)
+        if initializesBluetooth {
+            self.centralManager = CBCentralManager(delegate: self, queue: nil)
+        }
     }
 }
 
@@ -777,7 +784,7 @@ extension Device {
         connectedPeripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
     }
 
-    private func processResponse(_ data: Data) {
+    func processResponse(_ data: Data) {
         Logger.logBluetoothData(Array(data), direction: .incoming)
 
         guard let response = BluetoothResponse(data: Array(data)) else {

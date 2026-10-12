@@ -3,6 +3,13 @@ import XCTest
 
 final class NothingHeadphoneATests: XCTestCase {
 
+    // Captured Headphone (a) mode-change notifications (command 0x6003).
+    private let ancNotifications: [([UInt8], NoiseCancellationMode)] = [
+        ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x70, 0x93], .active(.adaptive)),
+        ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x05, 0x00, 0x71, 0x03], .off),
+        ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x07, 0x00, 0x70, 0x63], .transparent)
+    ]
+
     func testModelMetadata() {
         let model = DeviceModel.headphoneA(.black)
 
@@ -50,13 +57,6 @@ final class NothingHeadphoneATests: XCTestCase {
         let ancWriteRequest = BluetoothRequest.setANCMode(.active(.adaptive), operationID: 0x0E)
         XCTAssertEqual(ancWriteRequest.toBytes(), [0x55, 0x60, 0x01, 0x0F, 0xF0, 0x03, 0x00, 0x0E, 0x01, 0x04, 0x00, 0xF9, 0x93])
 
-        // Headphone (a) reports ANC changes with command 0x6003
-        let ancNotifications: [([UInt8], NoiseCancellationMode)] = [
-            ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x04, 0x00, 0x70, 0x93], .active(.adaptive)),
-            ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x05, 0x00, 0x71, 0x03], .off),
-            ([0x55, 0x20, 0x03, 0x03, 0x60, 0x03, 0x00, 0x00, 0x01, 0x07, 0x00, 0x70, 0x63], .transparent)
-        ]
-
         for (bytes, expectedMode) in ancNotifications {
             guard let ancResponse = BluetoothResponse(data: bytes) else {
                 XCTFail("Failed to parse ANC notification")
@@ -67,11 +67,44 @@ final class NothingHeadphoneATests: XCTestCase {
         }
     }
 
-    func testSpatialAudioModes() {
-        XCTAssertEqual(
-            SpatialAudioMode.allSupported(by: .headphoneA(.black)),
-            [.off, .cinema, .concert]
+    @MainActor
+    func testANCNotificationsUpdateDeviceStateAndCallback() {
+        var reportedModes: [NoiseCancellationMode?] = []
+        var errorCount = 0
+        let callback = Callback(
+            onDiscover: { _ in },
+            onConnect: { _ in },
+            onDisconnect: { _ in },
+            onUpdateBattery: { _ in },
+            onUpdateANCMode: { reportedModes.append($0) },
+            onUpdateSpatialAudio: { _ in },
+            onUpdateEnhancedBass: { _ in },
+            onUpdateEQPreset: { _ in },
+            onUpdateDeviceSettings: { _ in },
+            onUpdateRingBuds: { _ in },
+            onError: { _ in errorCount += 1 }
         )
+        let device = Device(callback, initializesBluetooth: false)
+        var expectedModes: [NoiseCancellationMode?] = []
+
+        for (bytes, expectedMode) in ancNotifications {
+            device.processResponse(Data(bytes))
+            expectedModes.append(expectedMode)
+
+            XCTAssertEqual(device.ancMode, expectedMode)
+            XCTAssertEqual(reportedModes, expectedModes)
+        }
+        XCTAssertEqual(errorCount, 0)
+    }
+
+    func testSpatialAudioModes() {
+        let models: [DeviceModel] = [
+            .headphoneA(.black), .headphoneA(.white),
+            .headphoneA(.yellow), .headphoneA(.pink)
+        ]
+        for model in models {
+            XCTAssertEqual(SpatialAudioMode.allSupported(by: model), [.off, .cinema, .concert])
+        }
     }
 
     func testSpatialAudio() {
@@ -96,6 +129,14 @@ final class NothingHeadphoneATests: XCTestCase {
             return
         }
         XCTAssertEqual(spatialResponse.parseSpatialAudioMode(), .off)
+    }
+
+    func testSpatialAudioCinemaResponse() throws {
+        throw XCTSkip("Captured Nothing Headphone (a) Cinema read-response bytes are not available.")
+    }
+
+    func testSpatialAudioConcertResponse() throws {
+        throw XCTSkip("Captured Nothing Headphone (a) Concert read-response bytes are not available.")
     }
 
     func testBattery() {
