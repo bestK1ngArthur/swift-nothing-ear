@@ -192,7 +192,7 @@ nothingEarDevice.setLowLatency(true)
 
 ## CMF Speakers
 
-CMF Speaker S and Speaker M support is based on Nothing X 3.10.0, with hardware connection and response captures still unverified. Speakers use standard EQ presets and a single battery level. They do not support the package's ANC, in-ear detection, or low latency controls.
+CMF Speaker S and Speaker M connections and response captures still need hardware verification. Speakers use standard EQ presets and a single battery level. They do not support the package's ANC, in-ear detection, or low latency controls.
 
 ```swift
 if let model = nothingEarDevice.deviceInfo?.model, model.isSpeaker {

@@ -37,7 +37,7 @@ Special credits to:
 - 🟡 [CMF Speaker S](Docs/cmf_speaker_s.md)
 - 🟡 [CMF Speaker M](Docs/cmf_speaker_m.md)
 
-Speaker support is derived from Nothing X 3.10.0; connection and device responses still need hardware verification.
+Speaker connection and device responses still need hardware verification.
 
 ## Installation
 

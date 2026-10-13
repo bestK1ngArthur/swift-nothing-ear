@@ -8,7 +8,7 @@
 - **Colors**: `.color01` (color ID `01`, name unverified), `.lightGrey` (`02`), `.orange` (`07`), `.turquoise` (`0C`)
 - **Detection**: Bluetooth name; serial SKU mappings are unavailable. Name detection defaults to `.color01` and does not determine the physical color.
 
-Support is derived from Nothing X 3.10.0. No real speaker response captures or Apple-platform hardware connection checks are available.
+No real speaker response captures or Apple-platform hardware connection checks are available.
 
 ## Features
 
@@ -25,7 +25,7 @@ Support is derived from Nothing X 3.10.0. No real speaker response captures or A
 | **Find My Speaker** | 🟡 | Use `RingBuds` with `.unibody`; speaker target is `0x07` |
 | **Active Noise Cancellation** | ⚫ | Not supported by speaker feature set |
 | **In-Ear Detection** | ⚫ | Not supported |
-| **Low Latency Mode** | ⚫ | Not exposed; no support evidence in the 3.10.0 speaker configuration |
+| **Low Latency Mode** | ⚫ | Not exposed; support is unconfirmed |
 | **Advanced Equalizer** | ⚫ | Not supported |
 | **Party / Stereo Mode** | 🔴 | Present in app configuration; not implemented by package |
 | **Dual Connection** | 🔴 | App enables it from firmware `*.*.1.41`; not implemented by package |

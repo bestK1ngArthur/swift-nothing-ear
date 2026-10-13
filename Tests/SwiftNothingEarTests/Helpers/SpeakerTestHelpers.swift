@@ -1,7 +1,7 @@
 import XCTest
 @testable import SwiftNothingEar
 
-// Synthetic fixtures based on the Nothing X native parsers. No hardware capture is implied.
+// Synthetic protocol fixtures. No hardware capture is implied.
 private func speakerResponse(_ command: UInt16, _ payload: [UInt8]) -> BluetoothResponse? {
     BluetoothResponse(data: [
         0x55, 0x60, 0x01, UInt8(command & 0xFF), UInt8(command >> 8),

@@ -17,7 +17,7 @@ final class CMFSpeakerMTests: XCTestCase {
     }
 
     func testSerialSKUMappings() throws {
-        throw XCTSkip("Nothing X does not provide captured CMF Speaker M serial SKU mappings.")
+        throw XCTSkip("Captured CMF Speaker M serial SKU mappings are not available.")
     }
 
     func testCapabilities() {
@@ -45,7 +45,7 @@ final class CMFSpeakerMTests: XCTestCase {
         XCTAssertTrue(DeviceModel.earA(.black).supportsLowLatency)
     }
 
-    // Request fixtures below are derived from Nothing X 3.10.0, not hardware captures.
+    // Request fixtures below are source-derived, not hardware captures.
     func testInitialQueriesUseSpeakerEndpoint() {
         XCTAssertEqual(read(BluetoothCommand.RequestRead.serialNumber),
             [0x55, 0x60, 0x01, 0x06, 0xC0, 0x01, 0x00, 0x01, 0x07, 0x9E, 0x92])
