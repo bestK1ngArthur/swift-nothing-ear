@@ -8,8 +8,6 @@
 - **Colors**: `.darkGrey` (`01`), `.white` (`02`), `.orange` (`07`), `.turquoise` (`0C`)
 - **Detection**: Bluetooth name; serial SKU mappings are unavailable. Name detection defaults to `.darkGrey` and does not determine the physical color.
 
-No real speaker response captures or Apple-platform hardware connection checks are available.
-
 ## Features
 
 | Feature | Status | Notes |
