@@ -20,6 +20,7 @@ enum BluetoothCommand {
         static let serialNumber: UInt16    = 49158 // 0xC006
         static let spatialAudio: UInt16    = 49231 // 0xC04F
         static let ringBuds: UInt16        = 49154 // 0xC002
+        static let speakerSoundMode: UInt16 = 0xC072
     }
 
     enum RequestWrite {
@@ -37,6 +38,7 @@ enum BluetoothCommand {
         static let personalizedANC: UInt16 = 61457 // 0xF011
         static let ringBuds: UInt16        = 61442 // 0xF002
         static let spatialAudio: UInt16    = 61522 // 0xF052
+        static let speakerSoundMode: UInt16 = 0xF076
     }
 
     enum Response {
@@ -60,6 +62,7 @@ enum BluetoothCommand {
         static let serialNumber: UInt16    = 16390 // 0x4006
         static let spatialAudio: UInt16    = 16463 // 0x404F
         static let ringBuds: UInt16        = 16386 // 0x4002
+        static let speakerSoundMode: UInt16 = 0x4072
     }
 }
 
@@ -153,6 +156,16 @@ struct Gesture {
     let type: GestureType
     let action: GestureAction
     let device: GestureDevice?
+
+    func isWritable(for model: DeviceModel) -> Bool {
+        guard action != .customAction else { return false }
+        if model.isSpeaker {
+            return type == .longPress
+                && (device == nil || device == .speaker)
+                && (action == .bassBoostToggle || action == .spatialAudioToggle)
+        }
+        return device != .speaker && action != .bassBoostToggle && action != .spatialAudioToggle
+    }
 }
 
 struct DeviceIdentity {
@@ -165,7 +178,10 @@ struct DeviceIdentity {
 
 extension BluetoothRequest {
 
-    func toBytes() -> [UInt8] {
+    func toBytes(for model: DeviceModel? = nil) -> [UInt8] {
+        // Speaker queries use endpoint 7 in the payload while retaining frame type 1.
+        // Nonempty payloads already encode their command-specific fields.
+        let payload = payload.isEmpty && model?.isSpeaker == true ? [UInt8(0x07)] : payload
         var header = Self.headerPrefix
 
         // Add command bytes (little endian)
@@ -271,9 +287,10 @@ extension BluetoothRequest {
 
     static func setGesture(
         _ gesture: Gesture,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
-        let deviceValue = gesture.device?.rawValue8 ?? 0x01
+        let deviceValue = model?.isSpeaker == true ? 0x07 : gesture.device?.rawValue8 ?? 0x01
         let payload: [UInt8] = [
             0x01,
             deviceValue,
@@ -316,10 +333,11 @@ extension BluetoothRequest {
 
     static func setSpatialAudioMode(
         _ mode: SpatialAudioMode,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
         let (firstByte, secondByte) = mode.rawValue8
-        let payload: [UInt8] = [firstByte, secondByte]
+        let payload: [UInt8] = model?.isSpeaker == true ? [firstByte] : [firstByte, secondByte]
 
         return Self(
             command: BluetoothCommand.RequestWrite.spatialAudio,
@@ -328,14 +346,33 @@ extension BluetoothRequest {
         )
     }
 
+    static func setSpeakerSoundMode(_ mode: SpeakerSoundMode, operationID: UInt8) -> Self {
+        let modeByte: UInt8
+        let minutes: UInt16
+        switch mode {
+            case .normal:
+                modeByte = 0
+                minutes = 0
+            case .night(let autoOffMinutes):
+                modeByte = 1
+                minutes = autoOffMinutes
+        }
+        return Self(
+            command: BluetoothCommand.RequestWrite.speakerSoundMode,
+            payload: [modeByte, UInt8(minutes & 0xFF), UInt8(minutes >> 8)],
+            operationID: operationID
+        )
+    }
+
     static func setRingBuds(
         _ ringBuds: RingBuds,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
         let firstByte: UInt8 = switch ringBuds.bud {
             case .left: 0x01
             case .right: 0x03
-            case .unibody: 0x06
+            case .unibody: model?.isSpeaker == true ? 0x07 : 0x06
         }
         let secondByte: UInt8 = ringBuds.isOn ? 0x01 : 0x00
         let payload: [UInt8] = [firstByte, secondByte]
@@ -452,6 +489,22 @@ extension BluetoothResponse {
         }
 
         switch model {
+        case .cmfSpeakerS, .cmfSpeakerM:
+            // Count followed by (component ID, charging bit + percentage) pairs.
+            let count = Int(payload[0])
+            guard payload.count >= 1 + count * 2 else { return nil }
+            var levels: [UInt8: BatteryLevel] = [:]
+            for index in 0..<count {
+                let offset = 1 + index * 2
+                let raw = payload[offset + 1]
+                let level = Int(raw & 0x7F)
+                levels[payload[offset]] = level <= 100
+                    ? .init(level: level, isCharging: raw & 0x80 != 0, isConnected: true)
+                    : .disconnected
+            }
+            // The app's stereo battery accessor prefers ID 6 and falls back to ID 7.
+            return .single(levels[0x06] ?? levels[0x07] ?? .disconnected)
+
         case .headphone1, .headphone1Pro, .headphoneA, .cmfHeadphonePro:
             // Expect exactly 3 bytes: [header, ?, batteryData]
             guard payload.count == 3 else {
@@ -808,6 +861,16 @@ extension BluetoothResponse {
         }
     }
 
+    func parseSpeakerSoundMode() -> SpeakerSoundMode? {
+        guard !payload.isEmpty else { return nil }
+        let minutes: UInt16 = payload.count >= 3 ? UInt16(payload[1]) | (UInt16(payload[2]) << 8) : 0
+        switch payload[0] {
+            case 0: return .normal
+            case 1: return .night(autoOffMinutes: minutes)
+            default: return nil
+        }
+    }
+
     func parseRingBuds() -> RingBuds? {
         guard payload.count >= 3 else {
             return nil
@@ -819,7 +882,7 @@ extension BluetoothResponse {
         let bud: RingBuds.Bud = switch budByte {
             case 0x01: .left
             case 0x03: .right
-            case 0x06: .unibody
+            case 0x06, 0x07: .unibody
             default: .left
         }
 
@@ -960,6 +1023,7 @@ extension GestureDevice {
         switch self {
             case .left: return 0x02
             case .right: return 0x03
+            case .speaker: return 0x07
         }
     }
 
@@ -967,6 +1031,7 @@ extension GestureDevice {
         switch value {
             case 0x02: return .left
             case 0x03: return .right
+            case 0x07: return .speaker
             default: return nil
         }
     }
@@ -1011,6 +1076,8 @@ extension GestureAction {
             case .volumeDown: return type == .longPress ? 0x13 : 0x07
             case .voiceAssistant: return 0x0B
             case .ancToggle: return 0x0A
+            case .bassBoostToggle: return 0x1C
+            case .spatialAudioToggle: return 0x1B
             case .customAction: return 0x01 // Not writable, see `GestureAction.customAction`
         }
     }
@@ -1025,7 +1092,9 @@ extension GestureAction {
             case 0x09: return .nextTrack
             case 0x0A, 0x16: return .ancToggle
             case 0x0B: return .voiceAssistant
-            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1D, 0x1F...0x25, 0x27, 0x28:
+            case 0x1C: return .bassBoostToggle
+            case 0x1B: return .spatialAudioToggle
+            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1A, 0x1D, 0x1F...0x25, 0x27, 0x28:
                 return .customAction
             default: return nil
         }

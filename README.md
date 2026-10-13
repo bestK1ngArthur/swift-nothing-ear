@@ -2,7 +2,7 @@
 
 > It's unofficial software and not affilated with Nothing ([legal](#legal-disclaimer))
 
-Swift Package for interacting with Nothing headphones on macOS and iOS.
+Swift Package for interacting with Nothing and CMF audio devices, including earbuds, headphones, and speakers, on macOS and iOS.
 
 Special credits to:
 
@@ -34,6 +34,10 @@ Special credits to:
 - 🟡 [CMF Neckband Pro](Docs/cmf_neckband_pro.md)
 - 🟡 [CMF Headphone Pro](Docs/cmf_headphone_pro.md)
 - 🟡 [CMF Clip Pro](Docs/cmf_clip_pro.md)
+- 🟡 [CMF Speaker S](Docs/cmf_speaker_s.md)
+- 🟡 [CMF Speaker M](Docs/cmf_speaker_m.md)
+
+Speaker support is derived from Nothing X 3.10.0; connection and device responses still need hardware verification. See the [speaker protocol investigation](Docs/nothing_x_3_10_0_speakers.md).
 
 ## Installation
 

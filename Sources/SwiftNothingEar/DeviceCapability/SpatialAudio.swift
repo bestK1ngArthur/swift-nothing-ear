@@ -36,7 +36,9 @@ extension SpatialAudioMode: DeviceCapability {
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
                  .cmfHeadphonePro,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 true
 
             case .earStick,
@@ -65,7 +67,9 @@ extension SpatialAudioMode: DeviceCapability {
                  .cmfBuds2Plus,
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 [.off, .fixed]
 
             case .headphoneA,
@@ -109,7 +113,9 @@ extension SpatialAudioMode: DeviceCapability {
                  .earA,
                  .headphone1,
                  .headphone1Pro,
-                 .headphoneA:
+                 .headphoneA,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 false
         }
     }

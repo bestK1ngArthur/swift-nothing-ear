@@ -1,6 +1,6 @@
 import Foundation
 
-/// Supported Nothing Ear device models
+/// Supported Nothing and CMF audio device models
 public enum DeviceModel: Sendable, Equatable {
     case ear1(Ear1)                       // Nothing Ear (1)
     case ear2(Ear2)                       // Nothing Ear (2)
@@ -23,6 +23,8 @@ public enum DeviceModel: Sendable, Equatable {
     case cmfNeckbandPro(CMFNeckbandPro)   // CMF Neckband Pro
     case cmfHeadphonePro(CMFHeadphonePro) // CMF Headphone Pro
     case cmfClipPro(CMFClipPro)           // CMF Clip Pro
+    case cmfSpeakerS(CMFSpeakerS)         // CMF Speaker S
+    case cmfSpeakerM(CMFSpeakerM)         // CMF Speaker M
 }
 
 extension DeviceModel {
@@ -142,6 +144,22 @@ extension DeviceModel {
         case coral
     }
 
+    public enum CMFSpeakerS: Sendable, Equatable {
+        /// Color ID 01. The app does not expose a color name in its bundled metadata.
+        case color01
+        case lightGrey
+        case orange
+        case turquoise
+    }
+
+    public enum CMFSpeakerM: Sendable, Equatable {
+        /// Color ID 01. The app does not expose a color name in its bundled metadata.
+        case color01
+        case lightGrey
+        case orange
+        case turquoise
+    }
+
     public var displayName: String {
         switch self {
             case .ear1: return "Nothing Ear (1)"
@@ -165,6 +183,8 @@ extension DeviceModel {
             case .cmfNeckbandPro: return "CMF Neckband Pro"
             case .cmfHeadphonePro: return "CMF Headphone Pro"
             case .cmfClipPro: return "CMF Clip Pro"
+            case .cmfSpeakerS: return "CMF Speaker S"
+            case .cmfSpeakerM: return "CMF Speaker M"
         }
     }
 
@@ -191,6 +211,8 @@ extension DeviceModel {
             case .cmfNeckbandPro: "B164"
             case .cmfHeadphonePro: "B175"
             case .cmfClipPro: "B189"
+            case .cmfSpeakerS: "E494"
+            case .cmfSpeakerM: "E495"
         }
     }
 
@@ -205,7 +227,9 @@ extension DeviceModel {
                   .cmfBudsPro2,
                   .cmfNeckbandPro,
                   .cmfHeadphonePro,
-                  .cmfClipPro:
+                  .cmfClipPro,
+                  .cmfSpeakerS,
+                  .cmfSpeakerM:
                 return true
             default:
                 return false
@@ -241,6 +265,21 @@ extension DeviceModel {
         RingBuds.isSupported(by: self)
     }
 
+    public var isSpeaker: Bool {
+        switch self {
+            case .cmfSpeakerS, .cmfSpeakerM: true
+            default: false
+        }
+    }
+
+    public var supportsSpeakerSoundMode: Bool {
+        SpeakerSoundMode.isSupported(by: self)
+    }
+
+    public var supportsLowLatency: Bool {
+        !isSpeaker
+    }
+
     public var supportsInEarDetection: Bool {
         switch self {
             case .earOpen,
@@ -249,7 +288,9 @@ extension DeviceModel {
                  .cmfBuds2a,
                  .cmfNeckbandPro,
                  .cmfHeadphonePro,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 false
             default: true
         }
@@ -283,6 +324,8 @@ extension DeviceModel {
             case "Nothing Ear (3a)": .ear3A(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
             case "CMF Clip Pro": .cmfClipPro(.darkGrey)
+            case "CMF Speaker S": .cmfSpeakerS(.color01)
+            case "CMF Speaker M": .cmfSpeakerM(.color01)
             case "Nothing Headphone (a)": .headphoneA(.black)
             default: nil
         }
@@ -452,6 +495,8 @@ extension DeviceModel {
             case (.cmfNeckbandPro, .cmfNeckbandPro): true
             case (.cmfHeadphonePro, .cmfHeadphonePro): true
             case (.cmfClipPro, .cmfClipPro): true
+            case (.cmfSpeakerS, .cmfSpeakerS): true
+            case (.cmfSpeakerM, .cmfSpeakerM): true
             default: false
         }
     }

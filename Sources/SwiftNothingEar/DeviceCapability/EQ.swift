@@ -81,7 +81,9 @@ extension EQPreset: DeviceCapability {
                  .cmfClipPro:
                 [.pop, .rock, .electronic, .enhanceVocals, .classical, .custom]
 
-            case .earA,
+            case .cmfSpeakerS,
+                 .cmfSpeakerM,
+                 .earA,
                  .cmfBudsPro,
                  .cmfNeckbandPro:
                 [.balanced, .voice, .moreTreble, .moreBass, .custom]
@@ -194,7 +196,9 @@ extension DeviceModel {
                  .earA,
                  .cmfBudsPro,
                  .cmfBudsNeo,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 return spec3400
 
             case .cmfBuds,

@@ -135,9 +135,9 @@ if let deviceInfo = nothingEarDevice.deviceInfo,
     let modes = NoiseCancellationMode.allSupported(by: deviceInfo.model)
     let levels = NoiseCancellationMode.Active.allSupported(by: deviceInfo.model)
 
-    nothingEarDevice.setANCMode(.active(.high))
-    nothingEarDevice.setANCMode(.transparent)
-    nothingEarDevice.setANCMode(.off)
+    nothingEarDevice.setNoiseCancellationMode(.active(.high))
+    nothingEarDevice.setNoiseCancellationMode(.transparent)
+    nothingEarDevice.setNoiseCancellationMode(.off)
 }
 ```
 
@@ -178,8 +178,8 @@ nothingEarDevice.setGesture(type: .trippleTap, action: .nextTrack, device: .righ
 if let deviceInfo = nothingEarDevice.deviceInfo,
    EnhancedBass.isSupported(by: deviceInfo.model) {
 
-    nothingEarDevice.setEnhancedBass(EnhancedBassSettings(isEnabled: true, level: 50))
-    nothingEarDevice.setEnhancedBass(EnhancedBassSettings(isEnabled: false, level: 0))
+    nothingEarDevice.setEnhancedBass(EnhancedBass(isEnabled: true, level: 3))
+    nothingEarDevice.setEnhancedBass(EnhancedBass(isEnabled: false, level: 3))
 }
 ```
 
@@ -189,6 +189,27 @@ if let deviceInfo = nothingEarDevice.deviceInfo,
 nothingEarDevice.setInEarDetection(true)
 nothingEarDevice.setLowLatency(true)
 ```
+
+## CMF Speakers
+
+CMF Speaker S and Speaker M support is based on Nothing X 3.10.0, with hardware connection and response captures still unverified. Speakers use standard EQ presets and a single battery level. They do not support the package's ANC, in-ear detection, or low latency controls.
+
+```swift
+if let model = nothingEarDevice.deviceInfo?.model, model.isSpeaker {
+    // Use Balanced and turn off spatial audio before entering Night mode.
+    nothingEarDevice.setEQPreset(.balanced)
+    nothingEarDevice.setSpatialAudioMode(.off)
+    nothingEarDevice.setSpeakerSoundMode(.night(autoOffMinutes: 30))
+
+    // The speaker's only configurable gesture is its long press.
+    nothingEarDevice.setGesture(
+        type: .longPress, action: .bassBoostToggle, device: .speaker
+    )
+    nothingEarDevice.setRingBuds(.init(isOn: false, bud: .unibody))
+}
+```
+
+Voice, More Treble, and More Bass presets conflict with Night mode or `.fixed` spatial audio; Balanced and Custom do not trigger this EQ interlock. Use `.normal` and turn off spatial audio before selecting those three presets. Disable Ultra Bass and leave Night mode before enabling `.fixed` spatial audio. The caller and device handle these interlocks; the package does not switch other modes automatically. Read the current mode through `speakerSoundMode`, or provide `onUpdateSpeakerSoundMode` in `Callback`.
 
 ## Reading Current State
 
