@@ -4,64 +4,64 @@ import Foundation
 enum BluetoothCommand {
 
     enum RequestRead {
-        static let advancedEQ: UInt16      = 49228 // 0xC04C
-        static let anc: UInt16             = 49182 // 0xC01E
-        static let battery: UInt16         = 49159 // 0xC007
-        static let customEQ: UInt16        = 49220 // 0xC044
-        static let enhancedBass: UInt16    = 49230 // 0xC04E
-        static let eq: UInt16              = 49183 // 0xC01F
-        static let firmware: UInt16        = 49218 // 0xC042
-        static let gesture: UInt16         = 49176 // 0xC018
-        static let inEarDetection: UInt16  = 49166 // 0xC00E
-        static let lowLatency: UInt16      = 49217 // 0xC041
-        static let ledCaseColor: UInt16    = 49175 // 0xC017
-        static let listeningMode: UInt16   = 49232 // 0xC050
-        static let personalizedANC: UInt16 = 49184 // 0xC020
-        static let serialNumber: UInt16    = 49158 // 0xC006
-        static let spatialAudio: UInt16    = 49231 // 0xC04F
-        static let ringBuds: UInt16        = 49154 // 0xC002
+        static let advancedEQ: UInt16      = 0xC04C
+        static let anc: UInt16             = 0xC01E
+        static let battery: UInt16         = 0xC007
+        static let customEQ: UInt16        = 0xC044
+        static let enhancedBass: UInt16    = 0xC04E
+        static let eq: UInt16              = 0xC01F
+        static let firmware: UInt16        = 0xC042
+        static let gesture: UInt16         = 0xC018
+        static let inEarDetection: UInt16  = 0xC00E
+        static let lowLatency: UInt16      = 0xC041
+        static let ledCaseColor: UInt16    = 0xC017
+        static let listeningMode: UInt16   = 0xC050
+        static let personalizedANC: UInt16 = 0xC020
+        static let serialNumber: UInt16    = 0xC006
+        static let spatialAudio: UInt16    = 0xC04F
+        static let ringBuds: UInt16        = 0xC002
         static let speakerSoundMode: UInt16 = 0xC072
     }
 
     enum RequestWrite {
-        static let advancedEQ: UInt16      = 61519 // 0xF04F
-        static let anc: UInt16             = 61455 // 0xF00F
-        static let customEQ: UInt16        = 61505 // 0xF041
-        static let earFitTest: UInt16      = 61460 // 0xF014
-        static let enhancedBass: UInt16    = 61521 // 0xF051
-        static let eq: UInt16              = 61456 // 0xF010
-        static let gesture: UInt16         = 61443 // 0xF003
-        static let inEarDetection: UInt16  = 61444 // 0xF004
-        static let lowLatency: UInt16      = 61504 // 0xF040
-        static let ledCaseColor: UInt16    = 61453 // 0xF00D
-        static let listeningMode: UInt16   = 61469 // 0xF01D
-        static let personalizedANC: UInt16 = 61457 // 0xF011
-        static let ringBuds: UInt16        = 61442 // 0xF002
-        static let spatialAudio: UInt16    = 61522 // 0xF052
+        static let advancedEQ: UInt16      = 0xF04F
+        static let anc: UInt16             = 0xF00F
+        static let customEQ: UInt16        = 0xF041
+        static let earFitTest: UInt16      = 0xF014
+        static let enhancedBass: UInt16    = 0xF051
+        static let eq: UInt16              = 0xF010
+        static let gesture: UInt16         = 0xF003
+        static let inEarDetection: UInt16  = 0xF004
+        static let lowLatency: UInt16      = 0xF040
+        static let ledCaseColor: UInt16    = 0xF00D
+        static let listeningMode: UInt16   = 0xF01D
+        static let personalizedANC: UInt16 = 0xF011
+        static let ringBuds: UInt16        = 0xF002
+        static let spatialAudio: UInt16    = 0xF052
         static let speakerSoundMode: UInt16 = 0xF076
     }
 
     enum Response {
-        static let advancedEQ: UInt16      = 16460 // 0x404C
-        static let ancA: UInt16            = 57347 // 0xE003
-        static let ancB: UInt16            = 16414 // 0x401E
-        static let ancC: UInt16            = 24579 // 0x6003
-        static let batteryA: UInt16        = 57345 // 0xE001
-        static let batteryB: UInt16        = 16391 // 0x4007
-        static let customEQ: UInt16        = 16452 // 0x4044
-        static let earFitTest: UInt16      = 57357 // 0xE00D
-        static let enhancedBass: UInt16    = 16462 // 0x404E
-        static let eqA: UInt16             = 16415 // 0x401F
-        static let eqB: UInt16             = 16464 // 0x4050
-        static let firmware: UInt16        = 16450 // 0x4042
-        static let gesture: UInt16         = 16408 // 0x4018
-        static let inEarDetection: UInt16  = 16398 // 0x400E
-        static let lowLatency: UInt16      = 16449 // 0x4041
-        static let ledCaseColor: UInt16    = 16407 // 0x4017
-        static let personalizedANC: UInt16 = 16416 // 0x4020
-        static let serialNumber: UInt16    = 16390 // 0x4006
-        static let spatialAudio: UInt16    = 16463 // 0x404F
-        static let ringBuds: UInt16        = 16386 // 0x4002
+        static let advancedEQ: UInt16      = 0x404C
+        static let ancA: UInt16            = 0xE003
+        static let ancB: UInt16            = 0x401E
+        static let ancC: UInt16            = 0x6003
+        static let batteryA: UInt16        = 0xE001
+        static let batteryB: UInt16        = 0x4007
+        static let customEQ: UInt16        = 0x4044
+        static let earFitTest: UInt16      = 0xE00D
+        static let enhancedBass: UInt16    = 0x404E
+        static let eqA: UInt16             = 0x401F
+        static let eqB: UInt16             = 0x4050
+        static let firmware: UInt16        = 0x4042
+        static let gesture: UInt16         = 0x4018
+        static let inEarDetection: UInt16  = 0x400E
+        static let lowLatency: UInt16      = 0x4041
+        static let ledCaseColor: UInt16    = 0x4017
+        static let personalizedANC: UInt16 = 0x4020
+        static let serialNumber: UInt16    = 0x4006
+        static let spatialAudio: UInt16    = 0x404F
+        static let ringBuds: UInt16        = 0x4002
         static let speakerSoundMode: UInt16 = 0x4072
     }
 }
