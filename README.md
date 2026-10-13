@@ -37,8 +37,6 @@ Special credits to:
 - 🟡 [CMF Speaker S](Docs/cmf_speaker_s.md)
 - 🟡 [CMF Speaker M](Docs/cmf_speaker_m.md)
 
-Speaker connection and device responses still need hardware verification.
-
 ## Installation
 
 ### Swift Package Manager
