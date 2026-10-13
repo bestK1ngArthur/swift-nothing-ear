@@ -105,7 +105,9 @@ extension NoiseCancellationMode: DeviceCapability {
 
             case .earStick,
                  .earOpen,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 false
         }
     }

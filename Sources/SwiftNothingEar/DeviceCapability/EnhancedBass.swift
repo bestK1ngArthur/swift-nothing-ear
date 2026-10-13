@@ -28,7 +28,9 @@ extension EnhancedBass: DeviceCapability {
                  .cmfBudsPro2,
                  .cmfNeckbandPro,
                  .cmfHeadphonePro,
-                 .cmfClipPro:
+                 .cmfClipPro,
+                 .cmfSpeakerS,
+                 .cmfSpeakerM:
                 true
             case .ear1,
                  .ear2,

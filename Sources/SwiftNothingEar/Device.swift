@@ -42,6 +42,7 @@ public struct Callback {
     let onUpdateEQPresetCustom: (EQPresetCustom?) -> Void
     let onUpdateDeviceSettings: (DeviceSettings) -> Void
     let onUpdateRingBuds: (RingBuds) -> Void
+    let onUpdateSpeakerSoundMode: (SpeakerSoundMode?) -> Void
 
     let onError: (ConnectionError) -> Void
 
@@ -57,6 +58,7 @@ public struct Callback {
         onUpdateEQPresetCustom: @escaping (EQPresetCustom?) -> Void = { _ in },
         onUpdateDeviceSettings: @escaping (DeviceSettings) -> Void,
         onUpdateRingBuds: @escaping (RingBuds) -> Void,
+        onUpdateSpeakerSoundMode: @escaping (SpeakerSoundMode?) -> Void = { _ in },
         onError: @escaping (ConnectionError) -> Void
     ) {
         self.onDiscover = onDiscover
@@ -70,6 +72,7 @@ public struct Callback {
         self.onUpdateEQPresetCustom = onUpdateEQPresetCustom
         self.onUpdateDeviceSettings = onUpdateDeviceSettings
         self.onUpdateRingBuds = onUpdateRingBuds
+        self.onUpdateSpeakerSoundMode = onUpdateSpeakerSoundMode
         self.onError = onError
     }
 }
@@ -89,6 +92,7 @@ public final class Device: NSObject {
     public private(set) var eqPresetCustom: EQPresetCustom?
     public private(set) var spatialAudio: SpatialAudioMode?
     public private(set) var ringBuds: RingBuds?
+    public private(set) var speakerSoundMode: SpeakerSoundMode?
 
     private var lastEQModePreset: EQPreset?
     private var isAdvancedEQEnabled = false
@@ -97,6 +101,7 @@ public final class Device: NSObject {
 
     // Fast Pair service UUID for discovering Nothing devices
     private let fastPairUUID = CBUUID(string: "FE2C")
+    private let controlServiceUUID = CBUUID(string: "FD90")
 
     // Standard BLE services to filter out when looking for proprietary service
     private let standardServices: Set<String> = [
@@ -176,7 +181,11 @@ extension Device {
         }
 
         connectionStatus = .scanning
-        centralManager.scanForPeripherals(withServices: [fastPairUUID])
+        #if os(iOS)
+        // Paired speakers can expose GATT over BR/EDR without an LE advertisement.
+        centralManager.registerForConnectionEvents(options: [.serviceUUIDs: [controlServiceUUID]])
+        #endif
+        centralManager.scanForPeripherals(withServices: [fastPairUUID, controlServiceUUID])
     }
 
     public func stopScanning() {
@@ -189,8 +198,11 @@ extension Device {
 
     @discardableResult
     public func checkAndConnectToExistingDevices() -> Bool {
-        // Check for already connected peripherals with Fast Pair service
+        // Speakers may expose the control service on an existing audio connection.
+        let pairedSpeakers = centralManager.retrieveConnectedPeripherals(withServices: [controlServiceUUID])
+            .filter { DeviceModel.getModel(for: $0.name ?? "", serialNumber: "")?.isSpeaker == true }
         let connectedPeripherals = centralManager.retrieveConnectedPeripherals(withServices: [fastPairUUID])
+            + pairedSpeakers
 
         guard let peripheral = connectedPeripherals.first else {
             return false
@@ -382,6 +394,11 @@ extension Device {
             return
         }
 
+        guard let deviceInfo, deviceInfo.model.supportsLowLatency else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setLowLatency(
                 isEnabled,
@@ -404,9 +421,15 @@ extension Device {
             return
         }
 
+        guard SpatialAudioMode.allSupported(by: deviceInfo.model).contains(mode) else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setSpatialAudioMode(
                 mode,
+                for: deviceInfo.model,
                 operationID: nextOperationID()
             )
         )
@@ -422,21 +445,32 @@ extension Device {
             return
         }
 
-        guard action != .customAction else {
+        let gesture = Gesture(type: type, action: action, device: device)
+        guard let deviceInfo, gesture.isWritable(for: deviceInfo.model) else {
             callback.onError(.unsupportedOperation)
             return
         }
 
         sendRequest(
             .setGesture(
-                .init(
-                    type: type,
-                    action: action,
-                    device: device
-                ),
+                gesture,
+                for: deviceInfo.model,
                 operationID: nextOperationID()
             )
         )
+    }
+
+    public func setSpeakerSoundMode(_ mode: SpeakerSoundMode) {
+        guard isConnected else {
+            callback.onError(.connectionFailed)
+            return
+        }
+        guard deviceInfo?.model.supportsSpeakerSoundMode == true else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+        sendRequest(.setSpeakerSoundMode(mode, operationID: nextOperationID()))
+        sendReadSpeakerSoundModeRequest()
     }
 
     public func setRingBuds(_ ringBuds: RingBuds) {
@@ -453,9 +487,15 @@ extension Device {
             return
         }
 
+        guard !deviceInfo.model.isSpeaker || ringBuds.bud == .unibody else {
+            callback.onError(.unsupportedOperation)
+            return
+        }
+
         sendRequest(
             .setRingBuds(
                 ringBuds,
+                for: deviceInfo.model,
                 operationID: nextOperationID()
             )
         )
@@ -491,6 +531,7 @@ extension Device {
         isInitialConnectionComplete = false
         lastEQModePreset = nil
         isAdvancedEQEnabled = false
+        speakerSoundMode = nil
 
         // Cancel any existing timeout task
         connectionTimeoutTask?.cancel()
@@ -561,7 +602,8 @@ extension Device {
             sendReadGestureRequest,
             sendReadSpatialAudioRequest,
             sendReadRingBudsRequest,
-            sendReadCustomEQRequest
+            sendReadCustomEQRequest,
+            sendReadSpeakerSoundModeRequest
         ]
 
         runTasks(tasks, delay: 0.1)
@@ -692,6 +734,8 @@ extension Device {
     }
 
     private func sendReadLowLatencyRequest() {
+        guard deviceInfo?.model.supportsLowLatency == true else { return }
+
         Logger.bluetooth.debug("⚡ Sending read latency request")
 
         let request = BluetoothRequest(
@@ -703,6 +747,8 @@ extension Device {
     }
 
     private func sendEnhancedBassRequest() {
+        guard deviceInfo?.model.supportsEnhancedBass == true else { return }
+
         Logger.bluetooth.debug("🎶 Sending read enhanced bass request")
 
         let request = BluetoothRequest(
@@ -770,6 +816,24 @@ extension Device {
         sendRequest(request)
     }
 
+    private func sendReadSpeakerSoundModeRequest() {
+        guard deviceInfo?.model.supportsSpeakerSoundMode == true else { return }
+        sendRequest(BluetoothRequest(
+            command: BluetoothCommand.RequestRead.speakerSoundMode,
+            payload: [],
+            operationID: nextOperationID()
+        ))
+    }
+
+    func requestBytes(_ request: BluetoothRequest, deviceName: String) -> [UInt8] {
+        // Do not reuse the previous connection's model for the initial handshake.
+        let model = hasReceivedDeviceIdentity ? deviceInfo?.model : DeviceModel.getModel(
+            for: deviceName,
+            serialNumber: ""
+        )
+        return request.toBytes(for: model)
+    }
+
     private func sendRequest(_ request: BluetoothRequest) {
         guard
             let connectedPeripheral,
@@ -779,7 +843,7 @@ extension Device {
             return
         }
 
-        let data = Data(request.toBytes())
+        let data = Data(requestBytes(request, deviceName: connectedPeripheral.name ?? ""))
         Logger.logBluetoothData(Array(data), direction: .outgoing)
         connectedPeripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
     }
@@ -936,6 +1000,13 @@ extension Device {
                     Logger.parsing.warning("👆 No gestures parsed from response")
                 }
 
+            case BluetoothCommand.Response.speakerSoundMode:
+                if deviceInfo?.model.supportsSpeakerSoundMode == true,
+                   let mode = response.parseSpeakerSoundMode() {
+                    speakerSoundMode = mode
+                    callback.onUpdateSpeakerSoundMode(mode)
+                }
+
             case BluetoothCommand.Response.ringBuds:
                 if let ringBuds = response.parseRingBuds() {
                     self.ringBuds = ringBuds
@@ -999,6 +1070,22 @@ extension Device {
 // MARK: CBCentralManagerDelegate
 
 extension Device: CBCentralManagerDelegate {
+
+    #if os(iOS)
+    nonisolated public func centralManager(
+        _ central: CBCentralManager,
+        connectionEventDidOccur event: CBConnectionEvent,
+        for peripheral: CBPeripheral
+    ) {
+        Task { @MainActor in
+            guard event == .peerConnected,
+                  connectionStatus == .scanning,
+                  DeviceModel.getModel(for: peripheral.name ?? "", serialNumber: "")?.isSpeaker == true
+            else { return }
+            callback.onDiscover(peripheral)
+        }
+    }
+    #endif
 
     nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {
         Task { @MainActor in

@@ -4,62 +4,65 @@ import Foundation
 enum BluetoothCommand {
 
     enum RequestRead {
-        static let advancedEQ: UInt16      = 49228 // 0xC04C
-        static let anc: UInt16             = 49182 // 0xC01E
-        static let battery: UInt16         = 49159 // 0xC007
-        static let customEQ: UInt16        = 49220 // 0xC044
-        static let enhancedBass: UInt16    = 49230 // 0xC04E
-        static let eq: UInt16              = 49183 // 0xC01F
-        static let firmware: UInt16        = 49218 // 0xC042
-        static let gesture: UInt16         = 49176 // 0xC018
-        static let inEarDetection: UInt16  = 49166 // 0xC00E
-        static let lowLatency: UInt16      = 49217 // 0xC041
-        static let ledCaseColor: UInt16    = 49175 // 0xC017
-        static let listeningMode: UInt16   = 49232 // 0xC050
-        static let personalizedANC: UInt16 = 49184 // 0xC020
-        static let serialNumber: UInt16    = 49158 // 0xC006
-        static let spatialAudio: UInt16    = 49231 // 0xC04F
-        static let ringBuds: UInt16        = 49154 // 0xC002
+        static let advancedEQ: UInt16      = 0xC04C
+        static let anc: UInt16             = 0xC01E
+        static let battery: UInt16         = 0xC007
+        static let customEQ: UInt16        = 0xC044
+        static let enhancedBass: UInt16    = 0xC04E
+        static let eq: UInt16              = 0xC01F
+        static let firmware: UInt16        = 0xC042
+        static let gesture: UInt16         = 0xC018
+        static let inEarDetection: UInt16  = 0xC00E
+        static let lowLatency: UInt16      = 0xC041
+        static let ledCaseColor: UInt16    = 0xC017
+        static let listeningMode: UInt16   = 0xC050
+        static let personalizedANC: UInt16 = 0xC020
+        static let serialNumber: UInt16    = 0xC006
+        static let spatialAudio: UInt16    = 0xC04F
+        static let ringBuds: UInt16        = 0xC002
+        static let speakerSoundMode: UInt16 = 0xC072
     }
 
     enum RequestWrite {
-        static let advancedEQ: UInt16      = 61519 // 0xF04F
-        static let anc: UInt16             = 61455 // 0xF00F
-        static let customEQ: UInt16        = 61505 // 0xF041
-        static let earFitTest: UInt16      = 61460 // 0xF014
-        static let enhancedBass: UInt16    = 61521 // 0xF051
-        static let eq: UInt16              = 61456 // 0xF010
-        static let gesture: UInt16         = 61443 // 0xF003
-        static let inEarDetection: UInt16  = 61444 // 0xF004
-        static let lowLatency: UInt16      = 61504 // 0xF040
-        static let ledCaseColor: UInt16    = 61453 // 0xF00D
-        static let listeningMode: UInt16   = 61469 // 0xF01D
-        static let personalizedANC: UInt16 = 61457 // 0xF011
-        static let ringBuds: UInt16        = 61442 // 0xF002
-        static let spatialAudio: UInt16    = 61522 // 0xF052
+        static let advancedEQ: UInt16      = 0xF04F
+        static let anc: UInt16             = 0xF00F
+        static let customEQ: UInt16        = 0xF041
+        static let earFitTest: UInt16      = 0xF014
+        static let enhancedBass: UInt16    = 0xF051
+        static let eq: UInt16              = 0xF010
+        static let gesture: UInt16         = 0xF003
+        static let inEarDetection: UInt16  = 0xF004
+        static let lowLatency: UInt16      = 0xF040
+        static let ledCaseColor: UInt16    = 0xF00D
+        static let listeningMode: UInt16   = 0xF01D
+        static let personalizedANC: UInt16 = 0xF011
+        static let ringBuds: UInt16        = 0xF002
+        static let spatialAudio: UInt16    = 0xF052
+        static let speakerSoundMode: UInt16 = 0xF076
     }
 
     enum Response {
-        static let advancedEQ: UInt16      = 16460 // 0x404C
-        static let ancA: UInt16            = 57347 // 0xE003
-        static let ancB: UInt16            = 16414 // 0x401E
-        static let ancC: UInt16            = 24579 // 0x6003
-        static let batteryA: UInt16        = 57345 // 0xE001
-        static let batteryB: UInt16        = 16391 // 0x4007
-        static let customEQ: UInt16        = 16452 // 0x4044
-        static let earFitTest: UInt16      = 57357 // 0xE00D
-        static let enhancedBass: UInt16    = 16462 // 0x404E
-        static let eqA: UInt16             = 16415 // 0x401F
-        static let eqB: UInt16             = 16464 // 0x4050
-        static let firmware: UInt16        = 16450 // 0x4042
-        static let gesture: UInt16         = 16408 // 0x4018
-        static let inEarDetection: UInt16  = 16398 // 0x400E
-        static let lowLatency: UInt16      = 16449 // 0x4041
-        static let ledCaseColor: UInt16    = 16407 // 0x4017
-        static let personalizedANC: UInt16 = 16416 // 0x4020
-        static let serialNumber: UInt16    = 16390 // 0x4006
-        static let spatialAudio: UInt16    = 16463 // 0x404F
-        static let ringBuds: UInt16        = 16386 // 0x4002
+        static let advancedEQ: UInt16      = 0x404C
+        static let ancA: UInt16            = 0xE003
+        static let ancB: UInt16            = 0x401E
+        static let ancC: UInt16            = 0x6003
+        static let batteryA: UInt16        = 0xE001
+        static let batteryB: UInt16        = 0x4007
+        static let customEQ: UInt16        = 0x4044
+        static let earFitTest: UInt16      = 0xE00D
+        static let enhancedBass: UInt16    = 0x404E
+        static let eqA: UInt16             = 0x401F
+        static let eqB: UInt16             = 0x4050
+        static let firmware: UInt16        = 0x4042
+        static let gesture: UInt16         = 0x4018
+        static let inEarDetection: UInt16  = 0x400E
+        static let lowLatency: UInt16      = 0x4041
+        static let ledCaseColor: UInt16    = 0x4017
+        static let personalizedANC: UInt16 = 0x4020
+        static let serialNumber: UInt16    = 0x4006
+        static let spatialAudio: UInt16    = 0x404F
+        static let ringBuds: UInt16        = 0x4002
+        static let speakerSoundMode: UInt16 = 0x4072
     }
 }
 
@@ -153,6 +156,16 @@ struct Gesture {
     let type: GestureType
     let action: GestureAction
     let device: GestureDevice?
+
+    func isWritable(for model: DeviceModel) -> Bool {
+        guard action != .customAction else { return false }
+        if model.isSpeaker {
+            return type == .longPress
+                && (device == nil || device == .speaker)
+                && (action == .bassBoostToggle || action == .spatialAudioToggle)
+        }
+        return device != .speaker && action != .bassBoostToggle && action != .spatialAudioToggle
+    }
 }
 
 struct DeviceIdentity {
@@ -165,7 +178,10 @@ struct DeviceIdentity {
 
 extension BluetoothRequest {
 
-    func toBytes() -> [UInt8] {
+    func toBytes(for model: DeviceModel? = nil) -> [UInt8] {
+        // Speaker queries use endpoint 7 in the payload while retaining frame type 1.
+        // Nonempty payloads already encode their command-specific fields.
+        let payload = payload.isEmpty && model?.isSpeaker == true ? [UInt8(0x07)] : payload
         var header = Self.headerPrefix
 
         // Add command bytes (little endian)
@@ -271,9 +287,10 @@ extension BluetoothRequest {
 
     static func setGesture(
         _ gesture: Gesture,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
-        let deviceValue = gesture.device?.rawValue8 ?? 0x01
+        let deviceValue = model?.isSpeaker == true ? 0x07 : gesture.device?.rawValue8 ?? 0x01
         let payload: [UInt8] = [
             0x01,
             deviceValue,
@@ -316,10 +333,11 @@ extension BluetoothRequest {
 
     static func setSpatialAudioMode(
         _ mode: SpatialAudioMode,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
         let (firstByte, secondByte) = mode.rawValue8
-        let payload: [UInt8] = [firstByte, secondByte]
+        let payload: [UInt8] = model?.isSpeaker == true ? [firstByte] : [firstByte, secondByte]
 
         return Self(
             command: BluetoothCommand.RequestWrite.spatialAudio,
@@ -328,14 +346,33 @@ extension BluetoothRequest {
         )
     }
 
+    static func setSpeakerSoundMode(_ mode: SpeakerSoundMode, operationID: UInt8) -> Self {
+        let modeByte: UInt8
+        let minutes: UInt16
+        switch mode {
+            case .normal:
+                modeByte = 0
+                minutes = 0
+            case .night(let autoOffMinutes):
+                modeByte = 1
+                minutes = autoOffMinutes
+        }
+        return Self(
+            command: BluetoothCommand.RequestWrite.speakerSoundMode,
+            payload: [modeByte, UInt8(minutes & 0xFF), UInt8(minutes >> 8)],
+            operationID: operationID
+        )
+    }
+
     static func setRingBuds(
         _ ringBuds: RingBuds,
+        for model: DeviceModel? = nil,
         operationID: UInt8
     ) -> Self {
         let firstByte: UInt8 = switch ringBuds.bud {
             case .left: 0x01
             case .right: 0x03
-            case .unibody: 0x06
+            case .unibody: model?.isSpeaker == true ? 0x07 : 0x06
         }
         let secondByte: UInt8 = ringBuds.isOn ? 0x01 : 0x00
         let payload: [UInt8] = [firstByte, secondByte]
@@ -452,6 +489,22 @@ extension BluetoothResponse {
         }
 
         switch model {
+        case .cmfSpeakerS, .cmfSpeakerM:
+            // Count followed by (component ID, charging bit + percentage) pairs.
+            let count = Int(payload[0])
+            guard payload.count >= 1 + count * 2 else { return nil }
+            var levels: [UInt8: BatteryLevel] = [:]
+            for index in 0..<count {
+                let offset = 1 + index * 2
+                let raw = payload[offset + 1]
+                let level = Int(raw & 0x7F)
+                levels[payload[offset]] = level <= 100
+                    ? .init(level: level, isCharging: raw & 0x80 != 0, isConnected: true)
+                    : .disconnected
+            }
+            // The app's stereo battery accessor prefers ID 6 and falls back to ID 7.
+            return .single(levels[0x06] ?? levels[0x07] ?? .disconnected)
+
         case .headphone1, .headphone1Pro, .headphoneA, .cmfHeadphonePro:
             // Expect exactly 3 bytes: [header, ?, batteryData]
             guard payload.count == 3 else {
@@ -808,6 +861,16 @@ extension BluetoothResponse {
         }
     }
 
+    func parseSpeakerSoundMode() -> SpeakerSoundMode? {
+        guard !payload.isEmpty else { return nil }
+        let minutes: UInt16 = payload.count >= 3 ? UInt16(payload[1]) | (UInt16(payload[2]) << 8) : 0
+        switch payload[0] {
+            case 0: return .normal
+            case 1: return .night(autoOffMinutes: minutes)
+            default: return nil
+        }
+    }
+
     func parseRingBuds() -> RingBuds? {
         guard payload.count >= 3 else {
             return nil
@@ -819,7 +882,7 @@ extension BluetoothResponse {
         let bud: RingBuds.Bud = switch budByte {
             case 0x01: .left
             case 0x03: .right
-            case 0x06: .unibody
+            case 0x06, 0x07: .unibody
             default: .left
         }
 
@@ -960,6 +1023,7 @@ extension GestureDevice {
         switch self {
             case .left: return 0x02
             case .right: return 0x03
+            case .speaker: return 0x07
         }
     }
 
@@ -967,6 +1031,7 @@ extension GestureDevice {
         switch value {
             case 0x02: return .left
             case 0x03: return .right
+            case 0x07: return .speaker
             default: return nil
         }
     }
@@ -1011,6 +1076,8 @@ extension GestureAction {
             case .volumeDown: return type == .longPress ? 0x13 : 0x07
             case .voiceAssistant: return 0x0B
             case .ancToggle: return 0x0A
+            case .bassBoostToggle: return 0x1C
+            case .spatialAudioToggle: return 0x1B
             case .customAction: return 0x01 // Not writable, see `GestureAction.customAction`
         }
     }
@@ -1025,7 +1092,9 @@ extension GestureAction {
             case 0x09: return .nextTrack
             case 0x0A, 0x16: return .ancToggle
             case 0x0B: return .voiceAssistant
-            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1D, 0x1F...0x25, 0x27, 0x28:
+            case 0x1C: return .bassBoostToggle
+            case 0x1B: return .spatialAudioToggle
+            case 0x03...0x05, 0x0C...0x11, 0x14, 0x15, 0x17...0x1A, 0x1D, 0x1F...0x25, 0x27, 0x28:
                 return .customAction
             default: return nil
         }
