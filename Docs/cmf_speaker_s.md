@@ -8,7 +8,7 @@
 - **Colors**: `.color01` (color ID `01`, name unverified), `.lightGrey` (`02`), `.orange` (`07`), `.turquoise` (`0C`)
 - **Detection**: Bluetooth name; serial SKU mappings are unavailable. Name detection defaults to `.color01` and does not determine the physical color.
 
-Support is derived from Nothing X 3.10.0. No real speaker response captures or Apple-platform hardware connection checks are available. See [protocol evidence and limitations](nothing_x_3_10_0_speakers.md).
+Support is derived from Nothing X 3.10.0. No real speaker response captures or Apple-platform hardware connection checks are available.
 
 ## Features
 
