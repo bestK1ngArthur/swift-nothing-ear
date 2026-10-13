@@ -145,17 +145,15 @@ extension DeviceModel {
     }
 
     public enum CMFSpeakerS: Sendable, Equatable {
-        /// Color ID 01. The app does not expose a color name in its bundled metadata.
-        case color01
-        case lightGrey
+        case darkGrey
+        case white
         case orange
         case turquoise
     }
 
     public enum CMFSpeakerM: Sendable, Equatable {
-        /// Color ID 01. The app does not expose a color name in its bundled metadata.
-        case color01
-        case lightGrey
+        case darkGrey
+        case white
         case orange
         case turquoise
     }
@@ -324,8 +322,8 @@ extension DeviceModel {
             case "Nothing Ear (3a)": .ear3A(.black)
             case "CMF Headphone Pro": .cmfHeadphonePro(.darkGrey)
             case "CMF Clip Pro": .cmfClipPro(.darkGrey)
-            case "CMF Speaker S": .cmfSpeakerS(.color01)
-            case "CMF Speaker M": .cmfSpeakerM(.color01)
+            case "CMF Speaker S": .cmfSpeakerS(.darkGrey)
+            case "CMF Speaker M": .cmfSpeakerM(.darkGrey)
             case "Nothing Headphone (a)": .headphoneA(.black)
             default: nil
         }

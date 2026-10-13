@@ -2,7 +2,7 @@ import XCTest
 @testable import SwiftNothingEar
 
 final class CMFSpeakerMTests: XCTestCase {
-    private let model = DeviceModel.cmfSpeakerM(.color01)
+    private let model = DeviceModel.cmfSpeakerM(.darkGrey)
 
     func testModelDetectionByNameAndSerial() {
         XCTAssertEqual(model.displayName, "CMF Speaker M")
@@ -13,7 +13,7 @@ final class CMFSpeakerMTests: XCTestCase {
             XCTAssertEqual(DeviceModel.getModel(for: "CMF Speaker M", serialNumber: serial), model)
         }
         XCTAssertTrue(DeviceModel.isBaseEqual(lhs: model, rhs: .cmfSpeakerM(.turquoise)))
-        XCTAssertFalse(DeviceModel.isBaseEqual(lhs: model, rhs: .cmfSpeakerS(.color01)))
+        XCTAssertFalse(DeviceModel.isBaseEqual(lhs: model, rhs: .cmfSpeakerS(.darkGrey)))
     }
 
     func testSerialSKUMappings() throws {
@@ -22,7 +22,7 @@ final class CMFSpeakerMTests: XCTestCase {
 
     func testCapabilities() {
         let models: [DeviceModel] = [
-            .cmfSpeakerM(.color01), .cmfSpeakerM(.lightGrey),
+            .cmfSpeakerM(.darkGrey), .cmfSpeakerM(.white),
             .cmfSpeakerM(.orange), .cmfSpeakerM(.turquoise)
         ]
         for model in models {

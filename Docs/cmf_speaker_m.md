@@ -5,8 +5,8 @@
 - **Model Code**: `E495`
 - **Display / Bluetooth Name**: CMF Speaker M
 - **Device Type**: Speaker; command endpoint `0x07`
-- **Colors**: `.color01` (color ID `01`, name unverified), `.lightGrey` (`02`), `.orange` (`07`), `.turquoise` (`0C`)
-- **Detection**: Bluetooth name; serial SKU mappings are unavailable. Name detection defaults to `.color01` and does not determine the physical color.
+- **Colors**: `.darkGrey` (`01`), `.white` (`02`), `.orange` (`07`), `.turquoise` (`0C`)
+- **Detection**: Bluetooth name; serial SKU mappings are unavailable. Name detection defaults to `.darkGrey` and does not determine the physical color.
 
 No real speaker response captures or Apple-platform hardware connection checks are available.
 
