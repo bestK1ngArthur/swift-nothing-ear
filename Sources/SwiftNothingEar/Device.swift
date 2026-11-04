@@ -286,6 +286,14 @@ extension Device {
             return
         }
 
+        requestDisconnection {
+            centralManager.cancelPeripheralConnection(connectedPeripheral)
+        }
+    }
+
+    /// The same cancellation path used by public disconnect, with transport supplied by Core Bluetooth.
+    func requestDisconnection(cancelPeripheralConnection: () -> Void) {
+        guard !sessionIsEnding else { return }
         sessionIsEnding = true
         sessionGeneration &+= 1
         pendingHandshake = nil
@@ -293,7 +301,7 @@ extension Device {
         cancelInitializationTasks()
         connectionTimeoutTask?.cancel()
         connectionTimeoutTask = nil
-        centralManager.cancelPeripheralConnection(connectedPeripheral)
+        cancelPeripheralConnection()
     }
 
     /// Sets the effective model for this `Device` instance only.
@@ -609,6 +617,19 @@ extension Device {
         } else {
             callback.onDisconnect(.success(()))
         }
+    }
+
+    func completeFailedConnection(
+        from peripheralIdentifier: UUID,
+        generation: UInt64,
+        name: String,
+        error: Error?
+    ) {
+        guard generation == sessionGeneration,
+              sessionPeripheralIdentifier == peripheralIdentifier else { return }
+        clearConnectionState()
+        Logger.bluetooth.error("❌ Failed to connect to peripheral: \(name, privacy: .public)")
+        callback.onConnect(.failure(error ?? ConnectionError.connectionFailed))
     }
 
     private func cancelInitializationTasks() {
@@ -1211,6 +1232,13 @@ extension Device {
 
 extension Device: CBCentralManagerDelegate {
 
+    /// Records a terminal delegate receipt before its MainActor cleanup is queued.
+    nonisolated func recordTerminalReceipt() -> UInt64 {
+        sessionIsEnding = true
+        sessionGeneration &+= 1
+        return sessionGeneration
+    }
+
     #if os(iOS)
     nonisolated public func centralManager(
         _ central: CBCentralManager,
@@ -1307,18 +1335,18 @@ extension Device: CBCentralManagerDelegate {
         error: Error?
     ) {
         guard connectedPeripheral === peripheral else { return }
-        sessionIsEnding = true
-        sessionGeneration &+= 1
-        let generation = sessionGeneration
+        let identifier = peripheral.identifier
+        let name = peripheral.name ?? "unknown"
+        let generation = recordTerminalReceipt()
 
         Task { @MainActor in
-            guard generation == sessionGeneration,
-                  connectedPeripheral === peripheral else { return }
-            clearConnectionState()
-
-            Logger.bluetooth.error("❌ Failed to connect to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
-
-            callback.onConnect(.failure(error ?? ConnectionError.connectionFailed))
+            guard connectedPeripheral === peripheral else { return }
+            completeFailedConnection(
+                from: identifier,
+                generation: generation,
+                name: name,
+                error: error
+            )
         }
     }
 
@@ -1332,9 +1360,7 @@ extension Device: CBCentralManagerDelegate {
         // Core Bluetooth supplies no old-session token if the same object reports one later.
         let identifier = peripheral.identifier
         let name = peripheral.name ?? "unknown"
-        sessionIsEnding = true
-        sessionGeneration &+= 1
-        let generation = sessionGeneration
+        let generation = recordTerminalReceipt()
 
         Task { @MainActor in
             guard connectedPeripheral === peripheral else { return }

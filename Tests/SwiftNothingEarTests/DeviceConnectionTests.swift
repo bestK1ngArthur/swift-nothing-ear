@@ -380,6 +380,108 @@ final class DeviceConnectionTests: XCTestCase {
         XCTAssertEqual(disconnects, 1)
     }
 
+    func testClientDisconnectAndTerminalReceiptBothOrdersFinishCleanup() {
+        for terminalReceiptFirst in [true, false] {
+            let identifier = UUID()
+            var disconnects = 0
+            var cancellations = 0
+            let device = Device(noOpCallback(onDisconnect: { _ in disconnects += 1 }), initializesBluetooth: false)
+
+            // Synthetic lifecycle fixture through the production terminal receipt,
+            // public disconnect cancellation path, and queued MainActor completion.
+            device.beginConnectionSession(for: identifier)
+            device.markSessionConnected()
+            let terminalGeneration: UInt64
+            if terminalReceiptFirst {
+                terminalGeneration = device.recordTerminalReceipt()
+                device.requestDisconnection { cancellations += 1 }
+            } else {
+                device.requestDisconnection { cancellations += 1 }
+                terminalGeneration = device.recordTerminalReceipt()
+            }
+            device.completeDisconnection(
+                from: identifier,
+                generation: terminalGeneration,
+                name: "synthetic",
+                error: nil
+            )
+
+            let order = terminalReceiptFirst ? "receipt then client" : "client then receipt"
+            XCTAssertEqual(cancellations, terminalReceiptFirst ? 0 : 1, order)
+            XCTAssertEqual(disconnects, 1, order)
+            XCTAssertTrue(device.connectionStatus == .disconnected, order)
+            XCTAssertFalse(Device.shouldIgnoreConnectionRequest(
+                currentPeripheralIdentifier: identifier,
+                requestedPeripheralIdentifier: identifier,
+                connectionStatus: device.connectionStatus,
+                peripheralState: .disconnected
+            ), order)
+        }
+    }
+
+    func testClientDisconnectAndFailedConnectReceiptBothOrdersFinishCleanup() {
+        for terminalReceiptFirst in [true, false] {
+            let identifier = UUID()
+            var failures = 0
+            var cancellations = 0
+            let device = Device(noOpCallback(onConnect: { result in
+                if case .failure = result { failures += 1 }
+            }), initializesBluetooth: false)
+
+            // Synthetic lifecycle fixture through the production didFailToConnect
+            // receipt and queued MainActor completion paths.
+            device.beginConnectionSession(for: identifier)
+            let terminalGeneration: UInt64
+            if terminalReceiptFirst {
+                terminalGeneration = device.recordTerminalReceipt()
+                device.requestDisconnection { cancellations += 1 }
+            } else {
+                device.requestDisconnection { cancellations += 1 }
+                terminalGeneration = device.recordTerminalReceipt()
+            }
+            device.completeFailedConnection(
+                from: identifier,
+                generation: terminalGeneration,
+                name: "synthetic",
+                error: nil
+            )
+
+            let order = terminalReceiptFirst ? "receipt then client" : "client then receipt"
+            XCTAssertEqual(cancellations, terminalReceiptFirst ? 0 : 1, order)
+            XCTAssertEqual(failures, 1, order)
+            XCTAssertTrue(device.connectionStatus == .disconnected, order)
+            XCTAssertFalse(Device.shouldIgnoreConnectionRequest(
+                currentPeripheralIdentifier: identifier,
+                requestedPeripheralIdentifier: identifier,
+                connectionStatus: device.connectionStatus,
+                peripheralState: .disconnected
+            ), order)
+        }
+    }
+
+    func testRepeatedClientDisconnectCancelsOnceAndStillFinishesCleanup() {
+        let identifier = UUID()
+        var cancellations = 0
+        var disconnects = 0
+        let device = Device(noOpCallback(onDisconnect: { _ in disconnects += 1 }), initializesBluetooth: false)
+
+        device.beginConnectionSession(for: identifier)
+        device.markSessionConnected()
+        device.requestDisconnection { cancellations += 1 }
+        device.requestDisconnection { cancellations += 1 }
+        let terminalGeneration = device.recordTerminalReceipt()
+        device.completeDisconnection(
+            from: identifier,
+            generation: terminalGeneration,
+            name: "synthetic",
+            error: nil
+        )
+
+        XCTAssertEqual(cancellations, 1)
+        XCTAssertEqual(disconnects, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
     func testTimeoutCallbackCanStartNewSession() async throws {
         var reconnect: (() -> Void)?
         var timeouts = 0
