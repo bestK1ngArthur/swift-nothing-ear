@@ -156,7 +156,7 @@ public final class Device: NSObject {
     private var pendingHandshake: (() -> Void)?
     private var pendingSubscriptionGeneration: UInt64?
     private var subscriptionConfirmed = false
-    // Bound the entire setup from connect; tests use a shorter internal interval.
+    // Bound the entire setup from connect.
     var setupTimeoutNanoseconds: UInt64 = 20_000_000_000
 
     public convenience init(_ callback: Callback) {
@@ -263,9 +263,7 @@ extension Device {
         pendingHandshake = nil
         pendingSubscriptionGeneration = nil
         subscriptionConfirmed = false
-        hasReceivedDeviceIdentity = false
-        hasReceivedFirmware = false
-        isInitialConnectionComplete = false
+        resetInitialConnectionProgress()
         proprietaryService = nil
         writeCharacteristic = nil
         notifyCharacteristic = nil
@@ -291,7 +289,7 @@ extension Device {
         }
     }
 
-    /// The same cancellation path used by public disconnect, with transport supplied by Core Bluetooth.
+    /// Cancels the active session once, before Core Bluetooth's terminal callback.
     func requestDisconnection(cancelPeripheralConnection: () -> Void) {
         guard !sessionIsEnding else { return }
         sessionIsEnding = true
@@ -594,9 +592,7 @@ extension Device {
 
         connectionTimeoutTask?.cancel()
         connectionTimeoutTask = nil
-        hasReceivedDeviceIdentity = false
-        hasReceivedFirmware = false
-        isInitialConnectionComplete = false
+        resetInitialConnectionProgress()
         candidateServices.removeAll()
         servicesToCheck = 0
         servicesChecked = 0
@@ -639,6 +635,12 @@ extension Device {
         initializationTask = nil
     }
 
+    private func resetInitialConnectionProgress() {
+        hasReceivedDeviceIdentity = false
+        hasReceivedFirmware = false
+        isInitialConnectionComplete = false
+    }
+
     private func startSetupTimeout(for generation: UInt64) {
         let interval = setupTimeoutNanoseconds
         connectionTimeoutTask = Task { @MainActor [weak self] in
@@ -674,10 +676,7 @@ extension Device {
         cancelInitializationTasks()
         let generation = sessionGeneration
 
-        // Reset state flags for new connection
-        hasReceivedDeviceIdentity = false
-        hasReceivedFirmware = false
-        isInitialConnectionComplete = false
+        resetInitialConnectionProgress()
         lastEQModePreset = nil
         isAdvancedEQEnabled = false
         speakerSoundMode = nil
@@ -1168,14 +1167,13 @@ extension Device {
         }
     }
 
-    /// Entry point for notification data after the Core Bluetooth delegate hop.
-    /// Kept separate from packet parsing so session delivery can be tested without hardware.
+    /// Delivers notification data only for its captured session.
     func processNotification(
         _ data: Data,
         from peripheralIdentifier: UUID,
-        generation: UInt64? = nil
+        generation: UInt64
     ) {
-        guard sessionGeneration == (generation ?? sessionGeneration),
+        guard sessionGeneration == generation,
               !sessionIsEnding,
               connectionStatus == .connected,
               sessionPeripheralIdentifier == peripheralIdentifier else { return }
@@ -1268,7 +1266,7 @@ extension Device: CBCentralManagerDelegate {
         }
     }
 
-    /// MainActor completion path for a Core Bluetooth manager state callback.
+    /// Applies a manager state callback after the delegate hop.
     func processCentralStateUpdate(
         observedState state: CBManagerState,
         generation: UInt64,
@@ -1592,7 +1590,7 @@ extension Device: CBPeripheralDelegate {
         }
     }
 
-    /// Completion path shared by discovered Core Bluetooth channels and lifecycle tests.
+    /// Requests notifications before starting the initial handshake.
     func completeCommunicationSetup(
         enableNotifications: () -> Void,
         beginHandshake: @escaping () -> Void

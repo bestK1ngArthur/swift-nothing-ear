@@ -2,76 +2,44 @@
 import XCTest
 @testable import SwiftNothingEar
 
+// Lifecycle cases use synthetic peripheral identifiers, callback order, and
+// closures against Device's production seams. Packet provenance is noted at
+// each byte fixture.
 @MainActor
 final class DeviceConnectionTests: XCTestCase {
 
     func testNotificationFromInactiveSessionDoesNotUpdateANC() {
         var reportedModes: [NoiseCancellationMode?] = []
-        let callback = Callback(
-            onDiscover: { _ in },
-            onConnect: { _ in },
-            onDisconnect: { _ in },
-            onUpdateBattery: { _ in },
-            onUpdateANCMode: { reportedModes.append($0) },
-            onUpdateSpatialAudio: { _ in },
-            onUpdateEnhancedBass: { _ in },
-            onUpdateEQPreset: { _ in },
-            onUpdateDeviceSettings: { _ in },
-            onUpdateRingBuds: { _ in },
-            onError: { _ in }
-        )
-        let device = Device(callback, initializesBluetooth: false)
+        let device = Device(noOpCallback(onANC: { reportedModes.append($0) }), initializesBluetooth: false)
 
-        // Synthetic lifecycle fixture: a queued notification arrives with no active session.
+        // A queued notification arrives with no active session. A new Device starts at generation 0.
         // The ANC bytes are the existing Ear (2024) capture in NothingEarTests.testANC.
         let capturedANC = Data([
             0x55, 0x60, 0x01, 0x1E, 0x40, 0x02, 0x00, 0x01,
             0x00, 0x03
         ])
-        device.processNotification(capturedANC, from: UUID())
+        device.processNotification(capturedANC, from: UUID(), generation: 0)
 
         XCTAssertNil(device.ancMode)
         XCTAssertTrue(reportedModes.isEmpty)
     }
 
     func testConnectionCleanupCancelsDelayedInitialization() async throws {
-        let callback = Callback(
-            onDiscover: { _ in },
-            onConnect: { _ in },
-            onDisconnect: { _ in },
-            onUpdateBattery: { _ in },
-            onUpdateANCMode: { _ in },
-            onUpdateSpatialAudio: { _ in },
-            onUpdateEnhancedBass: { _ in },
-            onUpdateEQPreset: { _ in },
-            onUpdateDeviceSettings: { _ in },
-            onUpdateRingBuds: { _ in },
-            onError: { _ in }
-        )
-        let device = Device(callback, initializesBluetooth: false)
+        let device = Device(noOpCallback(), initializesBluetooth: false)
         let delayedAction = expectation(description: "stale initialization action")
         delayedAction.isInverted = true
 
-        // Synthetic lifecycle fixture: use the production delayed-request scheduler,
-        // then run the same cleanup used by the Core Bluetooth disconnect callbacks.
+        // Schedule a delayed request, then run the cleanup used by disconnect callbacks.
         device.runTasks([{}, { delayedAction.fulfill() }], delay: 0.05)
         device.clearConnectionState()
         await fulfillment(of: [delayedAction], timeout: 1)
     }
 
     func testCurrentInitializationTasksStillRun() async throws {
-        let callback = Callback(
-            onDiscover: { _ in }, onConnect: { _ in }, onDisconnect: { _ in },
-            onUpdateBattery: { _ in }, onUpdateANCMode: { _ in },
-            onUpdateSpatialAudio: { _ in }, onUpdateEnhancedBass: { _ in },
-            onUpdateEQPreset: { _ in }, onUpdateDeviceSettings: { _ in },
-            onUpdateRingBuds: { _ in }, onError: { _ in }
-        )
-        let device = Device(callback, initializesBluetooth: false)
+        let device = Device(noOpCallback(), initializesBluetooth: false)
         let currentAction = expectation(description: "current initialization action")
 
-        // Synthetic lifecycle fixture: exercise the active generation of the
-        // production initialization scheduler without a hardware peripheral.
+        // Exercise the active generation of the initialization scheduler.
         device.beginConnectionSession(for: UUID())
         device.runTasks([{}, { currentAction.fulfill() }], delay: 0.02)
         await fulfillment(of: [currentAction], timeout: 2)
@@ -84,8 +52,7 @@ final class DeviceConnectionTests: XCTestCase {
         oldAction.isInverted = true
         let currentAction = expectation(description: "new session action")
 
-        // Synthetic lifecycle fixture: reuse one identifier across two sessions
-        // through the same production session and task scheduling paths.
+        // Reuse one identifier across two sessions and task schedules.
         device.beginConnectionSession(for: identifier)
         device.runTasks([{}, { oldAction.fulfill() }], delay: 0.05)
         device.beginConnectionSession(for: identifier)
@@ -102,8 +69,7 @@ final class DeviceConnectionTests: XCTestCase {
             0x00, 0x03
         ])
 
-        // Synthetic lifecycle fixture: a queued callback retains the old generation
-        // while the same peripheral identifier starts a new active session.
+        // A queued callback retains the old generation while the same identifier starts a new session.
         // The ANC bytes are the existing Ear (2024) capture in NothingEarTests.testANC.
         let oldGeneration = device.beginConnectionSession(for: identifier)
         device.markSessionConnected()
@@ -121,18 +87,10 @@ final class DeviceConnectionTests: XCTestCase {
     }
 
     func testHandshakeWaitsForNotificationSubscription() {
-        let callback = Callback(
-            onDiscover: { _ in }, onConnect: { _ in }, onDisconnect: { _ in },
-            onUpdateBattery: { _ in }, onUpdateANCMode: { _ in },
-            onUpdateSpatialAudio: { _ in }, onUpdateEnhancedBass: { _ in },
-            onUpdateEQPreset: { _ in }, onUpdateDeviceSettings: { _ in },
-            onUpdateRingBuds: { _ in }, onError: { _ in }
-        )
-        let device = Device(callback, initializesBluetooth: false)
+        let device = Device(noOpCallback(), initializesBluetooth: false)
         var events: [String] = []
 
-        // Synthetic lifecycle fixture: these closures stand in for the real
-        // setNotifyValue and initial handshake calls at the production completion seam.
+        // These closures stand in for setNotifyValue and the initial handshake.
         device.completeCommunicationSetup(
             enableNotifications: { events.append("subscribe") },
             beginHandshake: { events.append("handshake") }
@@ -145,7 +103,6 @@ final class DeviceConnectionTests: XCTestCase {
         let device = Device(noOpCallback(), initializesBluetooth: false)
         var events: [String] = []
 
-        // Synthetic lifecycle fixture through the production completion seam.
         device.beginConnectionSession(for: UUID())
         device.markSessionConnected()
         device.completeCommunicationSetup(
@@ -166,8 +123,7 @@ final class DeviceConnectionTests: XCTestCase {
             }), initializesBluetooth: false)
             var events: [String] = []
 
-            // Synthetic lifecycle fixture: notification state is off or Core Bluetooth
-            // reports an error, followed by a late success callback.
+            // Notification state is off or reports an error, followed by late success.
             device.beginConnectionSession(for: UUID())
             device.markSessionConnected()
             device.completeCommunicationSetup(
@@ -191,8 +147,7 @@ final class DeviceConnectionTests: XCTestCase {
             _ = device?.beginConnectionSession(for: nextIdentifier)
         }
 
-        // Synthetic lifecycle fixture: onError reenters Device while a failed
-        // subscription is being retired.
+        // onError reenters Device while a failed subscription is being retired.
         device.beginConnectionSession(for: UUID())
         device.markSessionConnected()
         device.completeCommunicationSetup(enableNotifications: {}, beginHandshake: {})
@@ -217,8 +172,7 @@ final class DeviceConnectionTests: XCTestCase {
             }), initializesBluetooth: false)
             device.setupTimeoutNanoseconds = 20_000_000
 
-            // Synthetic lifecycle fixtures exercise the real session start and
-            // subscription seams without a constructible CBPeripheral.
+            // Exercise silence during connect, discovery, and subscription.
             device.beginConnectionSession(for: UUID())
             if phase != "connect" { device.markSessionConnected() }
             if phase == "subscription" {
@@ -284,8 +238,7 @@ final class DeviceConnectionTests: XCTestCase {
         XCTAssertEqual(device.deviceInfo?.model, .ear(.black))
         XCTAssertEqual(device.deviceInfo?.firmwareVersion, "1.0.1.56")
 
-        // Synthetic lifecycle fixture: connect(to:) uses this same session start
-        // when replacing a previously initialized peripheral without cleanup.
+        // connect(to:) uses this session start when replacing a completed session.
         device.beginConnectionSession(for: UUID())
         await fulfillment(of: [timeoutEvent], timeout: 2)
 
@@ -298,8 +251,7 @@ final class DeviceConnectionTests: XCTestCase {
         let generation = device.beginConnectionSession(for: UUID())
         var discoveryChecks = 0
 
-        // Synthetic lifecycle fixture: poweredOff and poweredOn were both
-        // delivered before their queued MainActor completions ran. The manager
+        // poweredOff and poweredOn were delivered before queued completions ran. The manager
         // is powered on by the time either completion is processed.
         device.processCentralStateUpdate(
             observedState: .poweredOff,
@@ -322,8 +274,7 @@ final class DeviceConnectionTests: XCTestCase {
         let generation = device.beginConnectionSession(for: UUID())
         var discoveryChecks = 0
 
-        // Synthetic lifecycle fixture: the queued poweredOn callback is stale
-        // because the manager has since moved to poweredOff.
+        // The queued poweredOn callback is stale because the manager is now off.
         device.processCentralStateUpdate(
             observedState: .poweredOn,
             generation: generation,
@@ -346,8 +297,7 @@ final class DeviceConnectionTests: XCTestCase {
         }), initializesBluetooth: false)
         device.setupTimeoutNanoseconds = 20_000_000
 
-        // Synthetic lifecycle fixture: this production failure path is shared
-        // by service, characteristic, subscription, and setup deadline failures.
+        // Service, characteristic, subscription, and timeout failures share this path.
         device.beginConnectionSession(for: UUID())
         device.markSessionConnected()
         device.failInitialSetup(.connectionFailed)
@@ -363,8 +313,7 @@ final class DeviceConnectionTests: XCTestCase {
         let device = Device(noOpCallback(onDisconnect: { _ in disconnects += 1 }), initializesBluetooth: false)
         let identifier = UUID()
 
-        // Synthetic lifecycle fixture: an old MainActor completion arrives
-        // after the same identifier started a new active session.
+        // An old MainActor completion arrives after the same identifier starts a new session.
         let oldGeneration = device.beginConnectionSession(for: identifier)
         device.markSessionConnected()
         let currentGeneration = device.beginConnectionSession(for: identifier)
@@ -387,8 +336,7 @@ final class DeviceConnectionTests: XCTestCase {
             var cancellations = 0
             let device = Device(noOpCallback(onDisconnect: { _ in disconnects += 1 }), initializesBluetooth: false)
 
-            // Synthetic lifecycle fixture through the production terminal receipt,
-            // public disconnect cancellation path, and queued MainActor completion.
+            // Exercise terminal receipt, client cancellation, and queued completion in both orders.
             device.beginConnectionSession(for: identifier)
             device.markSessionConnected()
             let terminalGeneration: UInt64
@@ -428,8 +376,7 @@ final class DeviceConnectionTests: XCTestCase {
                 if case .failure = result { failures += 1 }
             }), initializesBluetooth: false)
 
-            // Synthetic lifecycle fixture through the production didFailToConnect
-            // receipt and queued MainActor completion paths.
+            // Exercise didFailToConnect receipt and queued completion in both orders.
             device.beginConnectionSession(for: identifier)
             let terminalGeneration: UInt64
             if terminalReceiptFirst {
