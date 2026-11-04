@@ -132,6 +132,7 @@ public final class Device: NSObject {
     private nonisolated(unsafe) var sessionGeneration: UInt64 = 0
     private nonisolated(unsafe) var sessionIsEnding = false
     private var sessionPeripheralIdentifier: UUID?
+    private var reportedManagerFaultState: CBManagerState?
 
     // Dynamically discovered characteristics
     private nonisolated(unsafe) var proprietaryService: CBService?
@@ -260,6 +261,7 @@ extension Device {
         sessionGeneration &+= 1
         sessionIsEnding = false
         sessionPeripheralIdentifier = peripheralIdentifier
+        reportedManagerFaultState = nil
         pendingHandshake = nil
         pendingSubscriptionGeneration = nil
         subscriptionConfirmed = false
@@ -602,12 +604,18 @@ extension Device {
         from peripheralIdentifier: UUID,
         generation: UInt64,
         name: String,
-        error: Error?
+        error: Error?,
+        managerState: CBManagerState? = nil
     ) {
         guard generation == sessionGeneration,
               sessionPeripheralIdentifier == peripheralIdentifier else { return }
+        let state = managerState ?? centralManager?.state
+        let managerError = managerFaultToReport(from: state)
         clearConnectionState()
         Logger.bluetooth.info("❌ Disconnected from peripheral: \(name, privacy: .public)")
+        if let managerError {
+            callback.onError(managerError)
+        }
         if let error {
             callback.onDisconnect(.failure(error))
         } else {
@@ -619,13 +627,27 @@ extension Device {
         from peripheralIdentifier: UUID,
         generation: UInt64,
         name: String,
-        error: Error?
+        error: Error?,
+        managerState: CBManagerState? = nil
     ) {
         guard generation == sessionGeneration,
               sessionPeripheralIdentifier == peripheralIdentifier else { return }
+        let state = managerState ?? centralManager?.state
+        let managerError = managerFaultToReport(from: state)
         clearConnectionState()
         Logger.bluetooth.error("❌ Failed to connect to peripheral: \(name, privacy: .public)")
+        if let managerError {
+            callback.onError(managerError)
+        }
         callback.onConnect(.failure(error ?? ConnectionError.connectionFailed))
+    }
+
+    private func managerFaultToReport(from state: CBManagerState?) -> ConnectionError? {
+        guard let state,
+              let error = error(from: state),
+              reportedManagerFaultState != state else { return nil }
+        reportedManagerFaultState = state
+        return error
     }
 
     private func cancelInitializationTasks() {
@@ -659,7 +681,7 @@ extension Device {
     }
 
     /// Ends a setup attempt before notifying clients; callbacks may start another session.
-    func failInitialSetup(_ error: ConnectionError) {
+    func failInitialSetup(_ error: ConnectionError, reportConnectionFailure: Bool = false) {
         guard !sessionIsEnding, !isInitialConnectionComplete else { return }
         let peripheral = connectedPeripheral
         let central = centralManager
@@ -668,6 +690,9 @@ extension Device {
             central.cancelPeripheralConnection(peripheral)
         }
         callback.onError(error)
+        if reportConnectionFailure {
+            callback.onConnect(.failure(error))
+        }
     }
 
     private func refreshDeviceStatus() {
@@ -1277,6 +1302,7 @@ extension Device: CBCentralManagerDelegate {
         guard state == currentState() else { return }
         if state == .poweredOn {
             // Power recovery belongs to the manager, not the old connection generation.
+            reportedManagerFaultState = nil
             onPoweredOn()
             return
         }
@@ -1284,14 +1310,20 @@ extension Device: CBCentralManagerDelegate {
         if let error = error(from: state) {
             if sessionPeripheralIdentifier != nil {
                 if isInitialConnectionComplete {
+                    let shouldReportError = reportedManagerFaultState != state
+                    reportedManagerFaultState = state
                     clearConnectionState()
-                    callback.onError(error)
-                } else {
-                    failInitialSetup(error)
+                    if shouldReportError { callback.onError(error) }
+                    callback.onDisconnect(.failure(error))
+                } else if !sessionIsEnding {
+                    reportedManagerFaultState = state
+                    failInitialSetup(error, reportConnectionFailure: true)
                 }
             } else {
+                let shouldReportError = reportedManagerFaultState != state
+                reportedManagerFaultState = state
                 connectionStatus = .disconnected
-                callback.onError(error)
+                if shouldReportError { callback.onError(error) }
             }
         }
     }

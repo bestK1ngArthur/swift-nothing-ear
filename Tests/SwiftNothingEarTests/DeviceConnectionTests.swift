@@ -285,16 +285,385 @@ final class DeviceConnectionTests: XCTestCase {
         XCTAssertEqual(discoveryChecks, 0)
     }
 
+    func testPoweredOffBeforeQueuedDisconnectCleanupReportsDisconnect() {
+        var connections = 0
+        var disconnects = 0
+        var errors = 0
+        var poweredOffErrors = 0
+        let device = Device(noOpCallback(
+            onConnect: { result in
+                if case .success = result { connections += 1 }
+            },
+            onDisconnect: { _ in disconnects += 1 },
+            onError: { error in
+                errors += 1
+                if case .bluetooth(.poweredOff) = error { poweredOffErrors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        let initialGeneration = establishEarSession(on: device, identifier: identifier)
+        XCTAssertEqual(connections, 1)
+        XCTAssertTrue(device.connectionStatus == .connected)
+
+        // Terminal receipt has queued cleanup. The poweredOff completion runs first.
+        let terminalGeneration = device.recordTerminalReceipt()
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: terminalGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        device.completeDisconnection(
+            from: identifier,
+            generation: terminalGeneration,
+            name: "synthetic",
+            error: nil,
+            managerState: .poweredOff
+        )
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: initialGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+
+        XCTAssertEqual(errors, 1)
+        XCTAssertEqual(poweredOffErrors, 1)
+        XCTAssertEqual(disconnects, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testPoweredOffBeforeTerminalReceiptReportsDisconnectOnce() {
+        var errors = 0
+        var disconnects = 0
+        let device = Device(noOpCallback(
+            onDisconnect: { _ in disconnects += 1 },
+            onError: { error in
+                if case .bluetooth(.poweredOff) = error { errors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        let initialGeneration = establishEarSession(on: device, identifier: identifier)
+
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: initialGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        let lateTerminalGeneration = device.recordTerminalReceipt()
+        device.completeDisconnection(
+            from: identifier, generation: lateTerminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: initialGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+
+        XCTAssertEqual(errors, 1)
+        XCTAssertEqual(disconnects, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testTerminalCleanupBeforePoweredOffStateReportsErrorAndDisconnectOnce() {
+        var errors = 0
+        var disconnects = 0
+        let device = Device(noOpCallback(
+            onDisconnect: { _ in disconnects += 1 },
+            onError: { error in
+                if case .bluetooth(.poweredOff) = error { errors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        establishEarSession(on: device, identifier: identifier)
+        let terminalGeneration = device.recordTerminalReceipt()
+
+        device.completeDisconnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: terminalGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        // A second manager callback can be captured after terminal cleanup advances the generation.
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: terminalGeneration &+ 1,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        device.completeDisconnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+
+        XCTAssertEqual(errors, 1)
+        XCTAssertEqual(disconnects, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testPowerFaultCallbacksCanStartNewSessionWithoutOldCleanupClearingIt() {
+        for terminalCleanupFirst in [false, true] {
+            for reconnectFromError in [false, true] {
+                var errors = 0
+                var disconnects = 0
+                var reconnect: (() -> Void)?
+                let device = Device(noOpCallback(
+                    onDisconnect: { _ in
+                        disconnects += 1
+                        if !reconnectFromError { reconnect?() }
+                    },
+                    onError: { error in
+                        if case .bluetooth(.poweredOff) = error {
+                            errors += 1
+                            if reconnectFromError { reconnect?() }
+                        }
+                    }
+                ), initializesBluetooth: false)
+                let oldIdentifier = UUID()
+                establishEarSession(on: device, identifier: oldIdentifier)
+                reconnect = { [weak device] in
+                    _ = device?.beginConnectionSession(for: UUID())
+                }
+                let terminalGeneration = device.recordTerminalReceipt()
+                let applyPowerState = {
+                    device.processCentralStateUpdate(
+                        observedState: .poweredOff,
+                        generation: terminalGeneration,
+                        currentState: { .poweredOff },
+                        onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+                    )
+                }
+                let finishTerminal = {
+                    device.completeDisconnection(
+                        from: oldIdentifier, generation: terminalGeneration,
+                        name: "synthetic", error: nil, managerState: .poweredOff
+                    )
+                }
+                if terminalCleanupFirst {
+                    finishTerminal()
+                    applyPowerState()
+                } else {
+                    applyPowerState()
+                    finishTerminal()
+                }
+                applyPowerState()
+                finishTerminal()
+
+                let order = "cleanupFirst=\(terminalCleanupFirst), reconnectFromError=\(reconnectFromError)"
+                XCTAssertEqual(errors, 1, order)
+                XCTAssertEqual(disconnects, 1, order)
+                XCTAssertTrue(device.connectionStatus == .connecting, order)
+                device.clearConnectionState()
+                reconnect = nil
+            }
+        }
+    }
+
+    func testPoweredOffDuringFailedConnectReceiptReportsErrorAndTerminalFailureOnce() {
+        var connectionFailures = 0
+        var poweredOffErrors = 0
+        let device = Device(noOpCallback(
+            onConnect: { result in
+                if case .failure = result { connectionFailures += 1 }
+            },
+            onError: { error in
+                if case .bluetooth(.poweredOff) = error { poweredOffErrors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        device.beginConnectionSession(for: identifier)
+
+        // didFailToConnect records receipt before its MainActor completion runs.
+        let terminalGeneration = device.recordTerminalReceipt()
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: terminalGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        device.completeFailedConnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.completeFailedConnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: terminalGeneration &+ 1,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+
+        XCTAssertEqual(connectionFailures, 1)
+        XCTAssertEqual(poweredOffErrors, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testPoweredOffCallbackCapturedBeforeFailedConnectReceiptReportsErrorAndTerminalFailureOnce() {
+        var connectionFailures = 0
+        var poweredOffErrors = 0
+        let device = Device(noOpCallback(
+            onConnect: { result in
+                if case .failure = result { connectionFailures += 1 }
+            },
+            onError: { error in
+                if case .bluetooth(.poweredOff) = error { poweredOffErrors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        let stateGeneration = device.beginConnectionSession(for: identifier)
+
+        // The queued manager callback holds the old generation when didFailToConnect arrives.
+        let terminalGeneration = device.recordTerminalReceipt()
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: stateGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        device.completeFailedConnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.completeFailedConnection(
+            from: identifier, generation: terminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+
+        XCTAssertEqual(connectionFailures, 1)
+        XCTAssertEqual(poweredOffErrors, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testPoweredOffBeforeFailedConnectReceiptReportsErrorAndTerminalFailureOnce() {
+        var connectionFailures = 0
+        var errors = 0
+        var poweredOffErrors = 0
+        let device = Device(noOpCallback(
+            onConnect: { result in
+                if case .failure = result { connectionFailures += 1 }
+                if case .success = result { XCTFail("Powered-off setup must not connect") }
+            },
+            onError: { error in
+                errors += 1
+                if case .bluetooth(.poweredOff) = error { poweredOffErrors += 1 }
+            }
+        ), initializesBluetooth: false)
+        let identifier = UUID()
+        let stateGeneration = device.beginConnectionSession(for: identifier)
+
+        // Manager state reaches Device before the failed-connect delegate receipt.
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: stateGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        device.processCentralStateUpdate(
+            observedState: .poweredOff,
+            generation: stateGeneration,
+            currentState: { .poweredOff },
+            onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+        )
+        let lateTerminalGeneration = device.recordTerminalReceipt()
+        device.completeFailedConnection(
+            from: identifier, generation: lateTerminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+        device.completeFailedConnection(
+            from: identifier, generation: lateTerminalGeneration,
+            name: "synthetic", error: nil, managerState: .poweredOff
+        )
+
+        XCTAssertEqual(connectionFailures, 1)
+        XCTAssertEqual(errors, 1)
+        XCTAssertEqual(poweredOffErrors, 1)
+        XCTAssertTrue(device.connectionStatus == .disconnected)
+    }
+
+    func testFailedConnectPowerFaultCallbacksCanStartNewSession() {
+        for stateFirst in [false, true] {
+            for reconnectFromError in [false, true] {
+                var connectionFailures = 0
+                var poweredOffErrors = 0
+                var reconnect: (() -> Void)?
+                let device = Device(noOpCallback(
+                    onConnect: { result in
+                        if case .failure = result {
+                            connectionFailures += 1
+                            if !reconnectFromError { reconnect?() }
+                        }
+                    },
+                    onError: { error in
+                        if case .bluetooth(.poweredOff) = error {
+                            poweredOffErrors += 1
+                            if reconnectFromError { reconnect?() }
+                        }
+                    }
+                ), initializesBluetooth: false)
+                let oldIdentifier = UUID()
+                let stateGeneration = device.beginConnectionSession(for: oldIdentifier)
+                reconnect = { [weak device] in
+                    _ = device?.beginConnectionSession(for: UUID())
+                }
+                let terminalGeneration = stateFirst ? stateGeneration : device.recordTerminalReceipt()
+                device.processCentralStateUpdate(
+                    observedState: .poweredOff,
+                    generation: terminalGeneration,
+                    currentState: { .poweredOff },
+                    onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+                )
+                // After state-first cleanup, the real delegate's peripheral identity guard drops receipt.
+                device.completeFailedConnection(
+                    from: oldIdentifier, generation: terminalGeneration,
+                    name: "synthetic", error: nil, managerState: .poweredOff
+                )
+                device.completeFailedConnection(
+                    from: oldIdentifier, generation: terminalGeneration,
+                    name: "synthetic", error: nil, managerState: .poweredOff
+                )
+                device.processCentralStateUpdate(
+                    observedState: .poweredOff,
+                    generation: terminalGeneration,
+                    currentState: { .poweredOff },
+                    onPoweredOn: { XCTFail("Powered-off state must not trigger discovery") }
+                )
+
+                let order = "stateFirst=\(stateFirst), reconnectFromError=\(reconnectFromError)"
+                XCTAssertEqual(connectionFailures, 1, order)
+                XCTAssertEqual(poweredOffErrors, 1, order)
+                XCTAssertTrue(device.connectionStatus == .connecting, order)
+                device.clearConnectionState()
+                reconnect = nil
+            }
+        }
+    }
+
     func testSetupFailureReportsOnceAndEndsSession() async throws {
         var errors = 0
+        var connectionFailures = 0
         let duplicateError = expectation(description: "duplicate setup error")
         duplicateError.isInverted = true
-        let device = Device(noOpCallback(onError: { error in
-            if case .connectionFailed = error {
-                errors += 1
-                if errors > 1 { duplicateError.fulfill() }
+        let device = Device(noOpCallback(
+            onConnect: { result in
+                if case .failure = result { connectionFailures += 1 }
+            },
+            onError: { error in
+                if case .connectionFailed = error {
+                    errors += 1
+                    if errors > 1 { duplicateError.fulfill() }
+                }
             }
-        }), initializesBluetooth: false)
+        ), initializesBluetooth: false)
         device.setupTimeoutNanoseconds = 20_000_000
 
         // Service, characteristic, subscription, and timeout failures share this path.
@@ -305,6 +674,7 @@ final class DeviceConnectionTests: XCTestCase {
         await fulfillment(of: [duplicateError], timeout: 0.2)
 
         XCTAssertEqual(errors, 1)
+        XCTAssertEqual(connectionFailures, 0)
         XCTAssertTrue(device.connectionStatus == .disconnected)
     }
 
@@ -502,6 +872,34 @@ final class DeviceConnectionTests: XCTestCase {
                 peripheralState: .connected
             )
         )
+    }
+
+    @discardableResult
+    private func establishEarSession(on device: Device, identifier: UUID) -> UInt64 {
+        let generation = device.beginConnectionSession(for: identifier)
+        device.markSessionConnected()
+
+        // Captured Ear (2024) identity from NothingEarTests.testDeviceConfigUsesBluetoothAddressWhenSerialIsEmpty.
+        let capturedIdentity: [UInt8] = [
+            0x55, 0x60, 0x01, 0x06, 0x40, 0x57, 0x00, 0x02,
+            0x09, 0x32, 0x2C, 0x31, 0x2C, 0x0A, 0x32, 0x2C,
+            0x32, 0x2C, 0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E,
+            0x35, 0x36, 0x0A, 0x32, 0x2C, 0x34, 0x2C, 0x0A,
+            0x33, 0x2C, 0x31, 0x2C, 0x0A, 0x33, 0x2C, 0x32,
+            0x2C, 0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E, 0x35,
+            0x36, 0x0A, 0x33, 0x2C, 0x34, 0x2C, 0x0A, 0x34,
+            0x2C, 0x31, 0x2C, 0x0A, 0x34, 0x2C, 0x32, 0x2C,
+            0x31, 0x2E, 0x30, 0x2E, 0x31, 0x2E, 0x35, 0x36,
+            0x0A, 0x34, 0x2C, 0x34, 0x2C, 0x0A, 0x33, 0x2C,
+            0x36, 0x2C, 0x37, 0x41, 0x31, 0x39, 0x44, 0x33,
+            0x34, 0x46, 0x42, 0x38, 0x32, 0x36, 0x0A
+        ]
+        // Synthetic firmware envelope with the capture's version; this is not a captured packet.
+        let syntheticFirmware = [UInt8(0x55), 0x60, 0x01, 0x42, 0x40, 0x08, 0x00, 0x02]
+            + Array("1.0.1.56".utf8)
+        device.processResponse(Data(capturedIdentity), deviceName: "Nothing Ear")
+        device.processResponse(Data(syntheticFirmware))
+        return generation
     }
 
     private func noOpCallback(
