@@ -80,7 +80,7 @@ public struct Callback {
 @MainActor
 public final class Device: NSObject {
 
-    public private(set) var connectionStatus: ConnectionStatus = .disconnected
+    public internal(set) var connectionStatus: ConnectionStatus = .disconnected
 
     public private(set) var deviceInfo: DeviceInfo?
     public private(set) var deviceSettings: DeviceSettings?
@@ -125,19 +125,21 @@ public final class Device: NSObject {
         "0000FD90-0000-1000-8000-00805F9B34FB": 300 // Nothing Ear / CMF control service
     ]
 
-    private nonisolated(unsafe) var centralManager: CBCentralManager!
-    private nonisolated(unsafe) var connectedPeripheral: CBPeripheral?
-    // Core Bluetooth delegates use the manager's main queue, but hop to MainActor tasks.
-    // Capture this before each hop so work queued by an older connection cannot enter a new one.
-    private nonisolated(unsafe) var sessionGeneration: UInt64 = 0
-    private nonisolated(unsafe) var sessionIsEnding = false
+    // The manager delivers delegate callbacks on the main queue; they run synchronously on MainActor.
+    private var centralManager: CBCentralManager!
+    private var connectedPeripheral: CBPeripheral?
+    // Advanced whenever a session starts or ends so delayed tasks cannot act on a newer session.
+    private var sessionGeneration: UInt64 = 0
+    // Set once teardown was requested; the session ends when Core Bluetooth reports the link closed.
+    private var sessionIsEnding = false
     private var sessionPeripheralIdentifier: UUID?
-    private var reportedManagerFaultState: CBManagerState?
+    private var sessionPeripheralName: String?
+    private var pendingSetupError: ConnectionError?
 
     // Dynamically discovered characteristics
-    private nonisolated(unsafe) var proprietaryService: CBService?
-    private nonisolated(unsafe) var writeCharacteristic: CBCharacteristic?
-    private nonisolated(unsafe) var notifyCharacteristic: CBCharacteristic?
+    private var proprietaryService: CBService?
+    private var writeCharacteristic: CBCharacteristic?
+    private var notifyCharacteristic: CBCharacteristic?
 
     // Service discovery state
     private var candidateServices: [CBService] = []
@@ -155,18 +157,26 @@ public final class Device: NSObject {
     private var firmwareRequestTask: Task<Void, Never>?
     private var initializationTask: Task<Void, Never>?
     private var pendingHandshake: (() -> Void)?
-    private var pendingSubscriptionGeneration: UInt64?
     private var subscriptionConfirmed = false
-    // Bound the entire setup from connect.
-    var setupTimeoutNanoseconds: UInt64 = 20_000_000_000
+    // Bounds the entire setup from connect.
+    private let setupTimeoutNanoseconds: UInt64
+    // Bounds the wait for Core Bluetooth to confirm a requested teardown.
+    private let teardownTimeoutNanoseconds: UInt64
 
     public convenience init(_ callback: Callback) {
         self.init(callback, initializesBluetooth: true)
     }
 
     /// Allows response tests to run without creating a Bluetooth manager.
-    init(_ callback: Callback, initializesBluetooth: Bool) {
+    init(
+        _ callback: Callback,
+        initializesBluetooth: Bool,
+        setupTimeoutNanoseconds: UInt64 = 20_000_000_000,
+        teardownTimeoutNanoseconds: UInt64 = 5_000_000_000
+    ) {
         self.callback = callback
+        self.setupTimeoutNanoseconds = setupTimeoutNanoseconds
+        self.teardownTimeoutNanoseconds = teardownTimeoutNanoseconds
         super.init()
         if initializesBluetooth {
             self.centralManager = CBCentralManager(delegate: self, queue: nil)
@@ -248,60 +258,24 @@ extension Device {
         }
 
         stopScanning()
-        beginConnectionSession(for: peripheral.identifier)
+        beginConnectionSession(for: peripheral.identifier, name: peripheral.name)
         connectedPeripheral = peripheral
         centralManager.connect(peripheral, options: nil)
     }
 
-    @discardableResult
-    func beginConnectionSession(for peripheralIdentifier: UUID) -> UInt64 {
-        cancelInitializationTasks()
-        connectionTimeoutTask?.cancel()
-        connectionTimeoutTask = nil
-        sessionGeneration &+= 1
-        sessionIsEnding = false
+    func beginConnectionSession(for peripheralIdentifier: UUID, name: String?) {
+        resetSessionState()
         sessionPeripheralIdentifier = peripheralIdentifier
-        reportedManagerFaultState = nil
-        pendingHandshake = nil
-        pendingSubscriptionGeneration = nil
-        subscriptionConfirmed = false
-        resetInitialConnectionProgress()
-        proprietaryService = nil
-        writeCharacteristic = nil
-        notifyCharacteristic = nil
-        candidateServices.removeAll()
-        servicesToCheck = 0
-        servicesChecked = 0
+        sessionPeripheralName = name
         connectionStatus = .connecting
-        startSetupTimeout(for: sessionGeneration)
-        return sessionGeneration
-    }
-
-    func markSessionConnected() {
-        connectionStatus = .connected
+        startSessionDeadline(setupTimeoutNanoseconds) { device in
+            Logger.bluetooth.warning("⏱️ Initial setup timed out")
+            device.failInitialSetup(.timeout)
+        }
     }
 
     public func disconnect() {
-        guard let connectedPeripheral else {
-            return
-        }
-
-        requestDisconnection {
-            centralManager.cancelPeripheralConnection(connectedPeripheral)
-        }
-    }
-
-    /// Cancels the active session once, before Core Bluetooth's terminal callback.
-    func requestDisconnection(cancelPeripheralConnection: () -> Void) {
-        guard !sessionIsEnding else { return }
-        sessionIsEnding = true
-        sessionGeneration &+= 1
-        pendingHandshake = nil
-        pendingSubscriptionGeneration = nil
-        cancelInitializationTasks()
-        connectionTimeoutTask?.cancel()
-        connectionTimeoutTask = nil
-        cancelPeripheralConnection()
+        endSession(setupError: nil)
     }
 
     /// Sets the effective model for this `Device` instance only.
@@ -579,78 +553,33 @@ extension Device {
     }
 
     func clearConnectionState() {
-        sessionIsEnding = true
-        sessionGeneration &+= 1
-        pendingHandshake = nil
-        pendingSubscriptionGeneration = nil
-        subscriptionConfirmed = false
-        cancelInitializationTasks()
+        resetSessionState()
         connectedPeripheral = nil
         sessionPeripheralIdentifier = nil
+        sessionPeripheralName = nil
+        connectionStatus = .disconnected
+    }
+
+    /// Resets everything owned by one session and fences its delayed tasks.
+    private func resetSessionState() {
+        sessionGeneration &+= 1
+        cancelSessionTasks()
+        sessionIsEnding = false
+        pendingSetupError = nil
+        pendingHandshake = nil
+        subscriptionConfirmed = false
+        resetInitialConnectionProgress()
         proprietaryService = nil
         writeCharacteristic = nil
         notifyCharacteristic = nil
-        connectionStatus = .disconnected
-
-        connectionTimeoutTask?.cancel()
-        connectionTimeoutTask = nil
-        resetInitialConnectionProgress()
         candidateServices.removeAll()
         servicesToCheck = 0
         servicesChecked = 0
     }
 
-    func completeDisconnection(
-        from peripheralIdentifier: UUID,
-        generation: UInt64,
-        name: String,
-        error: Error?,
-        managerState: CBManagerState? = nil
-    ) {
-        guard generation == sessionGeneration,
-              sessionPeripheralIdentifier == peripheralIdentifier else { return }
-        let state = managerState ?? centralManager?.state
-        let managerError = managerFaultToReport(from: state)
-        clearConnectionState()
-        Logger.bluetooth.info("❌ Disconnected from peripheral: \(name, privacy: .public)")
-        if let managerError {
-            callback.onError(managerError)
-        }
-        if let error {
-            callback.onDisconnect(.failure(error))
-        } else {
-            callback.onDisconnect(.success(()))
-        }
-    }
-
-    func completeFailedConnection(
-        from peripheralIdentifier: UUID,
-        generation: UInt64,
-        name: String,
-        error: Error?,
-        managerState: CBManagerState? = nil
-    ) {
-        guard generation == sessionGeneration,
-              sessionPeripheralIdentifier == peripheralIdentifier else { return }
-        let state = managerState ?? centralManager?.state
-        let managerError = managerFaultToReport(from: state)
-        clearConnectionState()
-        Logger.bluetooth.error("❌ Failed to connect to peripheral: \(name, privacy: .public)")
-        if let managerError {
-            callback.onError(managerError)
-        }
-        callback.onConnect(.failure(error ?? ConnectionError.connectionFailed))
-    }
-
-    private func managerFaultToReport(from state: CBManagerState?) -> ConnectionError? {
-        guard let state,
-              let error = error(from: state),
-              reportedManagerFaultState != state else { return nil }
-        reportedManagerFaultState = state
-        return error
-    }
-
-    private func cancelInitializationTasks() {
+    private func cancelSessionTasks() {
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
         firmwareRequestTask?.cancel()
         firmwareRequestTask = nil
         initializationTask?.cancel()
@@ -663,42 +592,101 @@ extension Device {
         isInitialConnectionComplete = false
     }
 
-    private func startSetupTimeout(for generation: UInt64) {
-        let interval = setupTimeoutNanoseconds
+    /// Runs `onExpire` unless the current session changes or ends first.
+    private func startSessionDeadline(
+        _ nanoseconds: UInt64,
+        onExpire: @escaping @Sendable @MainActor (Device) -> Void
+    ) {
+        connectionTimeoutTask?.cancel()
+        let generation = sessionGeneration
         connectionTimeoutTask = Task { @MainActor [weak self] in
             do {
-                try await Task.sleep(nanoseconds: interval)
+                try await Task.sleep(nanoseconds: nanoseconds)
             } catch {
                 return
             }
-            guard let self,
-                  generation == sessionGeneration,
-                  !sessionIsEnding,
-                  !isInitialConnectionComplete else { return }
-            Logger.bluetooth.warning("⏱️ Initial setup timed out")
-            failInitialSetup(.timeout)
+            guard let self, generation == sessionGeneration else { return }
+            onExpire(self)
         }
     }
 
-    /// Ends a setup attempt before notifying clients; callbacks may start another session.
-    func failInitialSetup(_ error: ConnectionError, reportConnectionFailure: Bool = false) {
-        guard !sessionIsEnding, !isInitialConnectionComplete else { return }
-        let peripheral = connectedPeripheral
-        let central = centralManager
-        clearConnectionState()
-        if let peripheral, let central {
-            central.cancelPeripheralConnection(peripheral)
+    /// Requests teardown once. The session ends when Core Bluetooth reports the link closed,
+    /// so a same-peripheral reconnect cannot be hit by this teardown's late callback.
+    private func endSession(setupError: ConnectionError?) {
+        guard sessionPeripheralIdentifier != nil, !sessionIsEnding else { return }
+        sessionGeneration &+= 1
+        cancelSessionTasks()
+        sessionIsEnding = true
+        pendingSetupError = setupError
+        pendingHandshake = nil
+
+        // Core Bluetooth documents a terminal callback after cancellation; don't wait forever.
+        startSessionDeadline(teardownTimeoutNanoseconds) { device in
+            device.finishSession(error: nil)
         }
+
+        if let connectedPeripheral, centralManager?.state == .poweredOn {
+            centralManager.cancelPeripheralConnection(connectedPeripheral)
+        }
+    }
+
+    /// Ends the current session with exactly one terminal callback.
+    ///
+    /// A session that never finished setup resolves its attempt with `onConnect(.failure)`;
+    /// an established session reports `onDisconnect`. State is cleared before any callback,
+    /// so a callback may start a replacement session.
+    func finishSession(error: Error?, bluetoothError: ConnectionError? = nil) {
+        guard sessionPeripheralIdentifier != nil else { return }
+        let wasEstablished = isInitialConnectionComplete
+        let setupError = pendingSetupError
+        let name = connectedPeripheral?.name ?? sessionPeripheralName ?? "unknown"
+        clearConnectionState()
+
+        if let bluetoothError {
+            callback.onError(bluetoothError)
+        }
+
+        let terminalError = bluetoothError ?? error
+        if wasEstablished {
+            Logger.bluetooth.info("❌ Disconnected from peripheral: \(name, privacy: .public)")
+            callback.onDisconnect(terminalError.map { .failure($0) } ?? .success(()))
+        } else {
+            Logger.bluetooth.error("❌ Failed to connect to peripheral: \(name, privacy: .public)")
+            callback.onConnect(.failure(setupError ?? terminalError ?? ConnectionError.connectionFailed))
+        }
+    }
+
+    /// Reports a setup failure and tears the link down; `onConnect(.failure)` follows on teardown.
+    func failInitialSetup(_ error: ConnectionError) {
+        guard sessionPeripheralIdentifier != nil,
+              !sessionIsEnding,
+              !isInitialConnectionComplete else { return }
+        endSession(setupError: error)
         callback.onError(error)
-        if reportConnectionFailure {
-            callback.onConnect(.failure(error))
+    }
+
+    /// Applies a manager state change. Core Bluetooth sends no per-peripheral callbacks
+    /// once the manager leaves `.poweredOn`, so the session ends here.
+    func handleManagerState(_ state: CBManagerState) {
+        if state == .poweredOn {
+            checkAndConnectToExistingDevices()
+            return
+        }
+        guard let error = error(from: state) else { return }
+
+        if sessionPeripheralIdentifier != nil {
+            finishSession(error: nil, bluetoothError: error)
+        } else {
+            connectionStatus = .disconnected
+            callback.onError(error)
         }
     }
 
     private func refreshDeviceStatus() {
         guard isConnected else { return }
 
-        cancelInitializationTasks()
+        firmwareRequestTask?.cancel()
+        initializationTask?.cancel()
         let generation = sessionGeneration
 
         resetInitialConnectionProgress()
@@ -1019,7 +1007,7 @@ extension Device {
         connectedPeripheral.writeValue(data, for: writeCharacteristic, type: .withResponse)
     }
 
-    func processResponse(_ data: Data, deviceName: String? = nil) {
+    func processResponse(_ data: Data) {
         Logger.logBluetoothData(Array(data), direction: .incoming)
 
         guard let response = BluetoothResponse(data: Array(data)) else {
@@ -1029,7 +1017,7 @@ extension Device {
 
         switch response.command {
             case BluetoothCommand.Response.serialNumber:
-                let deviceName = deviceName ?? connectedPeripheral?.name ?? "Unknown"
+                let deviceName = connectedPeripheral?.name ?? sessionPeripheralName ?? "Unknown"
 
                 if let identity = response.parseDeviceIdentity(deviceName: deviceName) {
                     updateDeviceInfo { deviceInfo in
@@ -1192,16 +1180,11 @@ extension Device {
         }
     }
 
-    /// Delivers notification data only for its captured session.
-    func processNotification(
-        _ data: Data,
-        from peripheralIdentifier: UUID,
-        generation: UInt64
-    ) {
-        guard sessionGeneration == generation,
+    /// Delivers notification data only while a session is established and not ending.
+    func processNotification(_ data: Data) {
+        guard sessionPeripheralIdentifier != nil,
               !sessionIsEnding,
-              connectionStatus == .connected,
-              sessionPeripheralIdentifier == peripheralIdentifier else { return }
+              connectionStatus == .connected else { return }
         processResponse(data)
     }
 
@@ -1255,12 +1238,8 @@ extension Device {
 
 extension Device: CBCentralManagerDelegate {
 
-    /// Records a terminal delegate receipt before its MainActor cleanup is queued.
-    nonisolated func recordTerminalReceipt() -> UInt64 {
-        sessionIsEnding = true
-        sessionGeneration &+= 1
-        return sessionGeneration
-    }
+    // The manager is created with the main queue, so each callback is handled synchronously
+    // on MainActor in delivery order; no queued work can outlive the session it belongs to.
 
     #if os(iOS)
     nonisolated public func centralManager(
@@ -1268,7 +1247,7 @@ extension Device: CBCentralManagerDelegate {
         connectionEventDidOccur event: CBConnectionEvent,
         for peripheral: CBPeripheral
     ) {
-        Task { @MainActor in
+        MainActor.assumeIsolated {
             guard event == .peerConnected,
                   connectionStatus == .scanning,
                   DeviceModel.getModel(for: peripheral.name ?? "", serialNumber: "")?.isSpeaker == true
@@ -1279,52 +1258,8 @@ extension Device: CBCentralManagerDelegate {
     #endif
 
     nonisolated public func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        let generation = sessionGeneration
-        let state = central.state
-        Task { @MainActor in
-            processCentralStateUpdate(
-                observedState: state,
-                generation: generation,
-                currentState: { central.state },
-                onPoweredOn: { _ = checkAndConnectToExistingDevices() }
-            )
-        }
-    }
-
-    /// Applies a manager state callback after the delegate hop.
-    func processCentralStateUpdate(
-        observedState state: CBManagerState,
-        generation: UInt64,
-        currentState: () -> CBManagerState,
-        onPoweredOn: () -> Void
-    ) {
-        // A queued state event can be obsolete by the time MainActor runs it.
-        guard state == currentState() else { return }
-        if state == .poweredOn {
-            // Power recovery belongs to the manager, not the old connection generation.
-            reportedManagerFaultState = nil
-            onPoweredOn()
-            return
-        }
-        guard generation == sessionGeneration else { return }
-        if let error = error(from: state) {
-            if sessionPeripheralIdentifier != nil {
-                if isInitialConnectionComplete {
-                    let shouldReportError = reportedManagerFaultState != state
-                    reportedManagerFaultState = state
-                    clearConnectionState()
-                    if shouldReportError { callback.onError(error) }
-                    callback.onDisconnect(.failure(error))
-                } else if !sessionIsEnding {
-                    reportedManagerFaultState = state
-                    failInitialSetup(error, reportConnectionFailure: true)
-                }
-            } else {
-                let shouldReportError = reportedManagerFaultState != state
-                reportedManagerFaultState = state
-                connectionStatus = .disconnected
-                if shouldReportError { callback.onError(error) }
-            }
+        MainActor.assumeIsolated {
+            handleManagerState(central.state)
         }
     }
 
@@ -1334,7 +1269,7 @@ extension Device: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
-        Task { @MainActor in
+        MainActor.assumeIsolated {
             Logger.bluetooth.debug("🔍 Discovered peripheral: \(peripheral.name ?? "unknown", privacy: .public) (RSSI: \(RSSI.intValue))")
             callback.onDiscover(peripheral)
         }
@@ -1344,13 +1279,11 @@ extension Device: CBCentralManagerDelegate {
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
-        let generation = sessionGeneration
-        Task { @MainActor in
-            guard generation == sessionGeneration,
+        MainActor.assumeIsolated {
+            guard connectedPeripheral === peripheral,
                   !sessionIsEnding,
-                  connectedPeripheral === peripheral,
                   connectionStatus == .connecting else { return }
-            markSessionConnected()
+            connectionStatus = .connected
 
             Logger.bluetooth.info("✅ Connected to peripheral: \(peripheral.name ?? "unknown", privacy: .public)")
 
@@ -1364,19 +1297,9 @@ extension Device: CBCentralManagerDelegate {
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
-        guard connectedPeripheral === peripheral else { return }
-        let identifier = peripheral.identifier
-        let name = peripheral.name ?? "unknown"
-        let generation = recordTerminalReceipt()
-
-        Task { @MainActor in
+        MainActor.assumeIsolated {
             guard connectedPeripheral === peripheral else { return }
-            completeFailedConnection(
-                from: identifier,
-                generation: generation,
-                name: name,
-                error: error
-            )
+            finishSession(error: error ?? ConnectionError.connectionFailed)
         }
     }
 
@@ -1385,21 +1308,9 @@ extension Device: CBCentralManagerDelegate {
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
-        guard connectedPeripheral === peripheral else { return }
-        // The generation fences a callback already received before reconnect.
-        // Core Bluetooth supplies no old-session token if the same object reports one later.
-        let identifier = peripheral.identifier
-        let name = peripheral.name ?? "unknown"
-        let generation = recordTerminalReceipt()
-
-        Task { @MainActor in
+        MainActor.assumeIsolated {
             guard connectedPeripheral === peripheral else { return }
-            completeDisconnection(
-                from: identifier,
-                generation: generation,
-                name: name,
-                error: error
-            )
+            finishSession(error: error)
         }
     }
 }
@@ -1412,14 +1323,9 @@ extension Device: CBPeripheralDelegate {
         _ peripheral: CBPeripheral,
         didDiscoverServices error: Error?
     ) {
-        let generation = sessionGeneration
-        let services = peripheral.services
-        Task { @MainActor in
-            guard generation == sessionGeneration,
-                  !sessionIsEnding,
-                  connectedPeripheral === peripheral,
-                  connectionStatus == .connected else { return }
-            guard error == nil, let services else {
+        MainActor.assumeIsolated {
+            guard isActiveSession(peripheral) else { return }
+            guard error == nil, let services = peripheral.services else {
                 failInitialSetup(.connectionFailed)
                 return
             }
@@ -1459,21 +1365,12 @@ extension Device: CBPeripheralDelegate {
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
-        let generation = sessionGeneration
-        let characteristics = service.characteristics
-        Task { @MainActor in
-            guard generation == sessionGeneration,
-                  !sessionIsEnding,
-                  connectedPeripheral === peripheral,
-                  connectionStatus == .connected,
+        MainActor.assumeIsolated {
+            guard isActiveSession(peripheral),
                   candidateServices.contains(where: { $0 === service }) else { return }
-            guard error == nil else {
-                // Another candidate can still provide the control channel.
-                await handleServiceChecked()
-                return
-            }
-            guard let characteristics, !characteristics.isEmpty else {
-                await handleServiceChecked()
+            // On error, another candidate can still provide the control channel.
+            guard error == nil, let characteristics = service.characteristics, !characteristics.isEmpty else {
+                handleServiceChecked()
                 return
             }
 
@@ -1485,11 +1382,11 @@ extension Device: CBPeripheralDelegate {
             }
 
             // Analyze this service as a candidate
-            await analyzeServiceCandidate(service: service, characteristics: characteristics, peripheral: peripheral)
+            analyzeServiceCandidate(service: service, characteristics: characteristics, peripheral: peripheral)
         }
     }
 
-    private func analyzeServiceCandidate(service: CBService, characteristics: [CBCharacteristic], peripheral: CBPeripheral) async {
+    private func analyzeServiceCandidate(service: CBService, characteristics: [CBCharacteristic], peripheral: CBPeripheral) {
         // Look for write and notify characteristics
         var foundWrite: CBCharacteristic?
         var foundNotify: CBCharacteristic?
@@ -1536,7 +1433,7 @@ extension Device: CBPeripheralDelegate {
             }
         }
 
-        await handleServiceChecked()
+        handleServiceChecked()
     }
 
     private func calculateServiceScore(
@@ -1599,7 +1496,7 @@ extension Device: CBPeripheralDelegate {
         )
     }
 
-    private func handleServiceChecked() async {
+    private func handleServiceChecked() {
         servicesChecked += 1
 
         // Check if we've analyzed all candidate services
@@ -1631,16 +1528,13 @@ extension Device: CBPeripheralDelegate {
               pendingHandshake == nil,
               !subscriptionConfirmed else { return }
         pendingHandshake = beginHandshake
-        pendingSubscriptionGeneration = sessionGeneration
         enableNotifications()
     }
 
     func completeNotificationSubscription(isNotifying: Bool, hadError: Bool = false) {
-        guard let pendingHandshake,
-              pendingSubscriptionGeneration == sessionGeneration,
-              !sessionIsEnding else { return }
+        // Every session reset clears the pending handshake, so it always belongs to this session.
+        guard let pendingHandshake, !sessionIsEnding else { return }
         self.pendingHandshake = nil
-        pendingSubscriptionGeneration = nil
 
         guard !hadError, isNotifying else {
             failInitialSetup(.connectionFailed)
@@ -1649,6 +1543,11 @@ extension Device: CBPeripheralDelegate {
 
         subscriptionConfirmed = true
         pendingHandshake()
+    }
+
+    /// Whether a peripheral callback belongs to the established, non-ending session.
+    private func isActiveSession(_ peripheral: CBPeripheral) -> Bool {
+        connectedPeripheral === peripheral && !sessionIsEnding && connectionStatus == .connected
     }
 
     // Helper function to describe characteristic properties
@@ -1667,15 +1566,10 @@ extension Device: CBPeripheralDelegate {
         didUpdateNotificationStateFor characteristic: CBCharacteristic,
         error: Error?
     ) {
-        let generation = sessionGeneration
-        let isNotifying = characteristic.isNotifying
-        let hadError = error != nil
-        Task { @MainActor in
-            guard generation == sessionGeneration,
-                  !sessionIsEnding,
-                  connectedPeripheral === peripheral,
+        MainActor.assumeIsolated {
+            guard isActiveSession(peripheral),
                   characteristic === notifyCharacteristic else { return }
-            completeNotificationSubscription(isNotifying: isNotifying, hadError: hadError)
+            completeNotificationSubscription(isNotifying: characteristic.isNotifying, hadError: error != nil)
         }
     }
 
@@ -1688,16 +1582,10 @@ extension Device: CBPeripheralDelegate {
             return
         }
 
-        let generation = sessionGeneration
-        let peripheralIdentifier = peripheral.identifier
-        Task { @MainActor in
+        MainActor.assumeIsolated {
             guard connectedPeripheral === peripheral,
                   characteristic === notifyCharacteristic else { return }
-            processNotification(
-                data,
-                from: peripheralIdentifier,
-                generation: generation
-            )
+            processNotification(data)
         }
     }
 
@@ -1710,11 +1598,8 @@ extension Device: CBPeripheralDelegate {
             return
         }
 
-        let generation = sessionGeneration
-        Task { @MainActor in
-            guard generation == sessionGeneration,
-                  !sessionIsEnding,
-                  connectedPeripheral === peripheral,
+        MainActor.assumeIsolated {
+            guard isActiveSession(peripheral),
                   characteristic === writeCharacteristic else { return }
             if isInitialConnectionComplete {
                 callback.onError(.connectionFailed)
